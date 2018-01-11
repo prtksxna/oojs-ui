@@ -2,10 +2,7 @@
  * RequestManager is a mixin that manages the lifecycle of a promise-backed request for a widget, such as
  * the {@link OO.ui.mixin.LookupElement}.
  *
- * @class
- * @abstract
- *
- * @constructor
+ * @mixin
  */
 OO.ui.mixin.RequestManager = function OoUiMixinRequestManager() {
 	this.requestCache = {};

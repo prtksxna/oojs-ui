@@ -7,10 +7,7 @@
  * Use together with OO.ui.mixin.GroupWidget to make disabled state inheritable.
  *
  * @private
- * @abstract
- * @class
- *
- * @constructor
+ * @mixin
  */
 OO.ui.mixin.ItemWidget = function OoUiMixinItemWidget() {
 	//

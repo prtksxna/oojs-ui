@@ -32,11 +32,11 @@
  * @abstract
  * @class
  * @extends OO.ui.Widget
- * @mixins OO.ui.mixin.GroupWidget
+ * @mixes OO.ui.mixin.GroupWidget
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {OO.ui.OptionWidget[]} [items] An array of options to add to the select.
+ * @param {OO.ui.OptionWidget[]} [config.items] An array of options to add to the select.
  *  Options are created with {@link OO.ui.OptionWidget OptionWidget} classes. See
  *  the [OOjs UI documentation on MediaWiki] [2] for examples.
  *  [2]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Selects_and_Options
@@ -91,51 +91,47 @@ OO.mixinClass( OO.ui.SelectWidget, OO.ui.mixin.GroupWidget );
 /* Events */
 
 /**
- * @event highlight
- *
  * A `highlight` event is emitted when the highlight is changed with the #highlightItem method.
  *
+ * @event OO.ui.SelectWidget#highlight
  * @param {OO.ui.OptionWidget|null} item Highlighted item
  */
 
 /**
- * @event press
- *
  * A `press` event is emitted when the #pressItem method is used to programmatically modify the
  * pressed state of an option.
  *
+ * @event OO.ui.SelectWidget#press
  * @param {OO.ui.OptionWidget|null} item Pressed item
  */
 
 /**
- * @event select
- *
  * A `select` event is emitted when the selection is modified programmatically with the #selectItem method.
  *
+ * @event OO.ui.SelectWidget#select
  * @param {OO.ui.OptionWidget|null} item Selected item
  */
 
 /**
- * @event choose
  * A `choose` event is emitted when an item is chosen with the #chooseItem method.
+ *
+ * @event OO.ui.SelectWidget#choose
  * @param {OO.ui.OptionWidget} item Chosen item
  */
 
 /**
- * @event add
- *
  * An `add` event is emitted when options are added to the select with the #addItems method.
  *
+ * @event OO.ui.SelectWidget#add
  * @param {OO.ui.OptionWidget[]} items Added items
  * @param {number} index Index of insertion point
  */
 
 /**
- * @event remove
- *
  * A `remove` event is emitted when options are removed from the select with the #clearItems
  * or #removeItems methods.
  *
+ * @event OO.ui.SelectWidget#remove
  * @param {OO.ui.OptionWidget[]} items Removed items
  */
 

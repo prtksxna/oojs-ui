@@ -21,21 +21,21 @@
  *
  * @class
  * @extends OO.ui.Layout
- * @mixins OO.ui.mixin.LabelElement
- * @mixins OO.ui.mixin.TitledElement
+ * @mixes OO.ui.mixin.LabelElement
+ * @mixes OO.ui.mixin.TitledElement
  *
  * @constructor
  * @param {OO.ui.Widget} fieldWidget Field widget
  * @param {Object} [config] Configuration options
- * @cfg {string} [align='left'] Alignment of the label: 'left', 'right', 'top' or 'inline'
- * @cfg {Array} [errors] Error messages about the widget, which will be displayed below the widget.
+ * @param {string} [config.align='left'] Alignment of the label: 'left', 'right', 'top' or 'inline'
+ * @param {Array} [config.errors] Error messages about the widget, which will be displayed below the widget.
  *  The array may contain strings or OO.ui.HtmlSnippet instances.
- * @cfg {Array} [notices] Notices about the widget, which will be displayed below the widget.
+ * @param {Array} [config.notices] Notices about the widget, which will be displayed below the widget.
  *  The array may contain strings or OO.ui.HtmlSnippet instances.
- * @cfg {string|OO.ui.HtmlSnippet} [help] Help text. When help text is specified, a "help" icon will appear
+ * @param {string|OO.ui.HtmlSnippet} [config.help] Help text. When help text is specified, a "help" icon will appear
  *  in the upper-right corner of the rendered field; clicking it will display the text in a popup.
  *  For important messages, you are advised to use `notices`, as they are always shown.
- * @cfg {jQuery} [$overlay] Passed to OO.ui.PopupButtonWidget for help popup, if `help` is given.
+ * @param {jQuery} [config.$overlay] Passed to OO.ui.PopupButtonWidget for help popup, if `help` is given.
  *  See <https://www.mediawiki.org/wiki/OOjs_UI/Concepts#Overlays>.
  *
  * @throws {Error} An error is thrown if no widget is specified

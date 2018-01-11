@@ -13,15 +13,13 @@
  *     } );
  *     $( 'body' ).append( button.$element );
  *
- * @abstract
- * @class
+ * @mixin
  *
- * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {jQuery} [$accessKeyed] The element to which the `accesskey` attribute is applied.
+ * @param {jQuery} [config.$accessKeyed] The element to which the `accesskey` attribute is applied.
  *  If this config is omitted, the accesskey functionality is applied to $element, the
  *  element created by the class.
- * @cfg {string|Function} [accessKey] The key or a function that returns the key. If
+ * @param {string|Function} [config.accessKey] The key or a function that returns the key. If
  *  this config is omitted, no accesskey will be added.
  */
 OO.ui.mixin.AccessKeyedElement = function OoUiMixinAccessKeyedElement( config ) {

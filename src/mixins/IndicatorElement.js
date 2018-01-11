@@ -12,18 +12,16 @@
  *
  * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Icons,_Indicators,_and_Labels#Indicators
  *
- * @abstract
- * @class
+ * @mixin
  *
- * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {jQuery} [$indicator] The indicator element created by the class. If this
+ * @param {jQuery} [config.$indicator] The indicator element created by the class. If this
  *  configuration is omitted, the indicator element will use a generated `<span>`.
- * @cfg {string} [indicator] Symbolic name of the indicator (e.g., ‘alert’ or  ‘down’).
+ * @param {string} [config.indicator] Symbolic name of the indicator (e.g., ‘alert’ or  ‘down’).
  *  See the [OOjs UI documentation on MediaWiki][2] for a list of indicators included
  *  in the library.
  * [2]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Icons,_Indicators,_and_Labels#Indicators
- * @cfg {string|Function} [indicatorTitle] A text string used as the indicator title,
+ * @param {string|Function} [config.indicatorTitle] A text string used as the indicator title,
  *  or a function that returns title text. The indicator title is displayed when users move
  *  the mouse over the indicator.
  */

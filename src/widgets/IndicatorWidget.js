@@ -20,8 +20,8 @@
  *
  * @class
  * @extends OO.ui.Widget
- * @mixins OO.ui.mixin.IndicatorElement
- * @mixins OO.ui.mixin.TitledElement
+ * @mixes OO.ui.mixin.IndicatorElement
+ * @mixes OO.ui.mixin.TitledElement
  *
  * @constructor
  * @param {Object} [config] Configuration options

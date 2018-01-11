@@ -6,15 +6,15 @@
  *
  * @class
  * @extends OO.ui.Widget
- * @mixins OO.ui.mixin.GroupElement
- * @mixins OO.ui.mixin.IconElement
+ * @mixes OO.ui.mixin.GroupElement
+ * @mixes OO.ui.mixin.IconElement
  *
  * @constructor
  * @param {OO.ui.OutlineSelectWidget} outline Outline to control
  * @param {Object} [config] Configuration options
- * @cfg {Object} [abilities] List of abilties
- * @cfg {boolean} [abilities.move=true] Allow moving movable items
- * @cfg {boolean} [abilities.remove=true] Allow removing removable items
+ * @param {Object} [config.abilities] List of abilties
+ * @param {boolean} [config.abilities.move=true] Allow moving movable items
+ * @param {boolean} [config.abilities.remove=true] Allow removing removable items
  */
 OO.ui.OutlineControlsWidget = function OoUiOutlineControlsWidget( outline, config ) {
 	// Allow passing positional parameters inside the config object

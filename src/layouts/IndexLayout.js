@@ -34,8 +34,8 @@
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {boolean} [continuous=false] Show all tab panels, one after another
- * @cfg {boolean} [autoFocus=true] Focus on the first focusable element when a new tab panel is displayed. Disabled on mobile.
+ * @param {boolean} [config.continuous=false] Show all tab panels, one after another
+ * @param {boolean} [config.autoFocus=true] Focus on the first focusable element when a new tab panel is displayed. Disabled on mobile.
  */
 OO.ui.IndexLayout = function OoUiIndexLayout( config ) {
 	// Configuration initialization

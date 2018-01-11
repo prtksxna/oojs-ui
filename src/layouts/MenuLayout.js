@@ -60,9 +60,9 @@
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {boolean} [expanded=true] Expand the layout to fill the entire parent element.
- * @cfg {boolean} [showMenu=true] Show menu
- * @cfg {string} [menuPosition='before'] Position of menu: `top`, `after`, `bottom` or `before`
+ * @param {boolean} [config.expanded=true] Expand the layout to fill the entire parent element.
+ * @param {boolean} [config.showMenu=true] Show menu
+ * @param {string} [config.menuPosition='before'] Position of menu: `top`, `after`, `bottom` or `before`
  */
 OO.ui.MenuLayout = function OoUiMenuLayout( config ) {
 	// Configuration initialization

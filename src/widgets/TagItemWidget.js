@@ -4,15 +4,15 @@
  *
  * @class
  * @extends OO.ui.Widget
- * @mixins OO.ui.mixin.ItemWidget
- * @mixins OO.ui.mixin.LabelElement
- * @mixins OO.ui.mixin.FlaggedElement
- * @mixins OO.ui.mixin.TabIndexedElement
- * @mixins OO.ui.mixin.DraggableElement
+ * @mixes OO.ui.mixin.ItemWidget
+ * @mixes OO.ui.mixin.LabelElement
+ * @mixes OO.ui.mixin.FlaggedElement
+ * @mixes OO.ui.mixin.TabIndexedElement
+ * @mixes OO.ui.mixin.DraggableElement
  *
  * @constructor
  * @param {Object} [config] Configuration object
- * @cfg {boolean} [valid=true] Item is valid
+ * @param {boolean} [config.valid=true] Item is valid
  */
 OO.ui.TagItemWidget = function OoUiTagItemWidget( config ) {
 	config = config || {};

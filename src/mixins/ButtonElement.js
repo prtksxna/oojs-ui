@@ -5,14 +5,12 @@
  *
  * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Buttons_and_Switches#Buttons
  *
- * @abstract
- * @class
+ * @mixin
  *
- * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {jQuery} [$button] The button element created by the class.
+ * @param {jQuery} [config.$button] The button element created by the class.
  *  If this configuration is omitted, the button element will use a generated `<a>`.
- * @cfg {boolean} [framed=true] Render the button with a frame
+ * @param {boolean} [config.framed=true] Render the button with a frame
  */
 OO.ui.mixin.ButtonElement = function OoUiMixinButtonElement( config ) {
 	// Configuration initialization
@@ -60,7 +58,7 @@ OO.ui.mixin.ButtonElement.static.cancelButtonMouseDownEvents = true;
 /**
  * A 'click' event is emitted when the button element is clicked.
  *
- * @event click
+ * @event OO.ui.ButtonElement#click
  */
 
 /* Methods */

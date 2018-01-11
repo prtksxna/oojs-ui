@@ -36,7 +36,7 @@
  * @abstract
  * @class
  * @extends OO.ui.Window
- * @mixins OO.ui.mixin.PendingElement
+ * @mixes OO.ui.mixin.PendingElement
  *
  * @constructor
  * @param {Object} [config] Configuration options

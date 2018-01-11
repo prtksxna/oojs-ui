@@ -15,8 +15,8 @@
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {string|jQuery} [placeholder] Placeholder text for query input
- * @cfg {string} [value] Initial query value
+ * @param {string|jQuery} [config.placeholder] Placeholder text for query input
+ * @param {string} [config.value] Initial query value
  */
 OO.ui.SearchWidget = function OoUiSearchWidget( config ) {
 	// Configuration initialization

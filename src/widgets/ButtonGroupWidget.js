@@ -24,11 +24,11 @@
  *
  * @class
  * @extends OO.ui.Widget
- * @mixins OO.ui.mixin.GroupElement
+ * @mixes OO.ui.mixin.GroupElement
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {OO.ui.ButtonWidget[]} [items] Buttons to add
+ * @param {OO.ui.ButtonWidget[]} [config.items] Buttons to add
  */
 OO.ui.ButtonGroupWidget = function OoUiButtonGroupWidget( config ) {
 	// Configuration initialization

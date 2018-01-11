@@ -28,8 +28,8 @@
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {Object[]} [options=[]] Array of menu options in the format `{ data: …, label: … }`
- * @cfg {Object} [dropdown] Configuration options for {@link OO.ui.DropdownWidget DropdownWidget}
+ * @param {Object[]} [config.options=[]] Array of menu options in the format `{ data: …, label: … }`
+ * @param {Object} [config.dropdown] Configuration options for {@link OO.ui.DropdownWidget DropdownWidget}
  */
 OO.ui.DropdownInputWidget = function OoUiDropdownInputWidget( config ) {
 	// Configuration initialization

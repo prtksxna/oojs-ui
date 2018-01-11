@@ -13,19 +13,19 @@
  *
  * @class
  * @extends OO.ui.Widget
- * @mixins OO.ui.mixin.IconElement
- * @mixins OO.ui.mixin.IndicatorElement
- * @mixins OO.ui.mixin.PendingElement
- * @mixins OO.ui.mixin.LabelElement
+ * @mixes OO.ui.mixin.IconElement
+ * @mixes OO.ui.mixin.IndicatorElement
+ * @mixes OO.ui.mixin.PendingElement
+ * @mixes OO.ui.mixin.LabelElement
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {string[]|null} [accept=null] MIME types to accept. null accepts all types.
- * @cfg {string} [placeholder] Text to display when no file is selected.
- * @cfg {string} [notsupported] Text to display when file support is missing in the browser.
- * @cfg {boolean} [droppable=true] Whether to accept files by drag and drop.
- * @cfg {boolean} [showDropTarget=false] Whether to show a drop target. Requires droppable to be true.
- * @cfg {number} [thumbnailSizeLimit=20] File size limit in MiB above which to not try and show a
+ * @param {string[]|null} [config.accept=null] MIME types to accept. null accepts all types.
+ * @param {string} [config.placeholder] Text to display when no file is selected.
+ * @param {string} [config.notsupported] Text to display when file support is missing in the browser.
+ * @param {boolean} [config.droppable=true] Whether to accept files by drag and drop.
+ * @param {boolean} [config.showDropTarget=false] Whether to show a drop target. Requires droppable to be true.
+ * @param {number} [config.thumbnailSizeLimit=20] File size limit in MiB above which to not try and show a
  *  preview (for performance)
  */
 OO.ui.SelectFileWidget = function OoUiSelectFileWidget( config ) {

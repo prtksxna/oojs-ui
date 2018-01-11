@@ -4,13 +4,11 @@
  * popup has an anchor, which is an arrow-like protrusion that points toward the popup’s origin.
  * See {@link OO.ui.PopupWidget PopupWidget} for an example.
  *
- * @abstract
- * @class
+ * @mixin
  *
- * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {Object} [popup] Configuration to pass to popup
- * @cfg {boolean} [popup.autoClose=true] Popup auto-closes when it loses focus
+ * @param {Object} [config.popup] Configuration to pass to popup
+ * @param {boolean} [config.popup.autoClose=true] Popup auto-closes when it loses focus
  */
 OO.ui.mixin.PopupElement = function OoUiMixinPopupElement( config ) {
 	// Configuration initialization

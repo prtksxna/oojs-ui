@@ -74,7 +74,7 @@
  *
  * @abstract
  * @class
- * @mixins OO.EventEmitter
+ * @mixes OO.EventEmitter
  *
  * @constructor
  * @param {Object} [config] Configuration options
@@ -125,36 +125,33 @@ OO.ui.ActionSet.static.specialFlags = [ 'safe', 'primary' ];
 /* Events */
 
 /**
- * @event click
- *
  * A 'click' event is emitted when an action is clicked.
  *
+ * @event click
  * @param {OO.ui.ActionWidget} action Action that was clicked
  */
 
 /**
- * @event add
- *
  * An 'add' event is emitted when actions are {@link #method-add added} to the action set.
  *
+ * @event add
  * @param {OO.ui.ActionWidget[]} added Actions added
  */
 
 /**
- * @event remove
- *
  * A 'remove' event is emitted when actions are {@link #method-remove removed}
  *  or {@link #clear cleared}.
  *
+ * @event remove
  * @param {OO.ui.ActionWidget[]} added Actions removed
  */
 
 /**
- * @event change
  *
  * A 'change' event is emitted when actions are {@link #method-add added}, {@link #clear cleared},
  * or {@link #method-remove removed} from the action set or when the {@link #setMode mode} is changed.
  *
+ * @event change
  */
 
 /* Methods */

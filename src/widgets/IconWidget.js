@@ -19,9 +19,9 @@
  *
  * @class
  * @extends OO.ui.Widget
- * @mixins OO.ui.mixin.IconElement
- * @mixins OO.ui.mixin.TitledElement
- * @mixins OO.ui.mixin.FlaggedElement
+ * @mixes OO.ui.mixin.IconElement
+ * @mixes OO.ui.mixin.TitledElement
+ * @mixes OO.ui.mixin.FlaggedElement
  *
  * @constructor
  * @param {Object} [config] Configuration options

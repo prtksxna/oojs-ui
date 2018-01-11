@@ -8,11 +8,11 @@
  * @class
  * @abstract
  * @extends OO.ui.Widget
- * @mixins OO.ui.mixin.GroupWidget
+ * @mixes OO.ui.mixin.GroupWidget
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {OO.ui.MultioptionWidget[]} [items] An array of options to add to the multiselect.
+ * @param {OO.ui.MultioptionWidget[]} [config.items] An array of options to add to the multiselect.
  */
 OO.ui.MultiselectWidget = function OoUiMultiselectWidget( config ) {
 	// Parent constructor
