@@ -6,11 +6,11 @@
  * @abstract
  * @class
  * @extends OO.ui.Element
- * @mixins OO.EventEmitter
+ * @mixes OO.EventEmitter
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {boolean} [disabled=false] Disable the widget. Disabled widgets cannot be used and their
+ * @param {boolean} [config.disabled=false] Disable the widget. Disabled widgets cannot be used and their
  *  appearance reflects this state.
  */
 OO.ui.Widget = function OoUiWidget( config ) {
@@ -40,19 +40,18 @@ OO.mixinClass( OO.ui.Widget, OO.EventEmitter );
 /* Events */
 
 /**
- * @event disable
- *
  * A 'disable' event is emitted when the disabled state of the widget changes
  * (i.e. on disable **and** enable).
+ *
+ * @event disable
  *
  * @param {boolean} disabled Widget is disabled
  */
 
 /**
- * @event toggle
- *
  * A 'toggle' event is emitted when the visibility of the widget changes.
  *
+ * @event toggle
  * @param {boolean} visible Widget is visible
  */
 

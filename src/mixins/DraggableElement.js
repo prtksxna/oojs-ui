@@ -4,13 +4,11 @@
  * in conjunction with OO.ui.mixin.DraggableGroupElement, which provides a container for
  * the draggable elements.
  *
- * @abstract
- * @class
+ * @mixin
  *
- * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {jQuery} [$handle] The part of the element which can be used for dragging, defaults to the whole element
- * @cfg {boolean} [draggable] The items are draggable. This can change with #toggleDraggable
+ * @param {jQuery} [config.$handle] The part of the element which can be used for dragging, defaults to the whole element
+ * @param {boolean} [config.draggable] The items are draggable. This can change with #toggleDraggable
  *  but the draggable state should be called from the DraggableGroupElement, which updates
  *  the whole group
  */

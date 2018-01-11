@@ -37,7 +37,7 @@
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {boolean} [selected=false] Select the checkbox initially. By default, the checkbox is not selected.
+ * @param {boolean} [config.selected=false] Select the checkbox initially. By default, the checkbox is not selected.
  */
 OO.ui.CheckboxInputWidget = function OoUiCheckboxInputWidget( config ) {
 	// Configuration initialization

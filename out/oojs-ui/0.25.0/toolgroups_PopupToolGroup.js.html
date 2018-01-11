@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: toolgroups/PopupToolGroup.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: toolgroups/PopupToolGroup.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * PopupToolGroup is an abstract base class used by both {@link OO.ui.MenuToolGroup MenuToolGroup}
+ * and {@link OO.ui.ListToolGroup ListToolGroup} to provide a popup--an overlaid menu or list of tools with an
+ * optional icon and label. This class can be used for other base classes that also use this functionality.
+ *
+ * @abstract
+ * @class
+ * @extends OO.ui.ToolGroup
+ * @mixes OO.ui.mixin.IconElement
+ * @mixes OO.ui.mixin.IndicatorElement
+ * @mixes OO.ui.mixin.LabelElement
+ * @mixes OO.ui.mixin.TitledElement
+ * @mixes OO.ui.mixin.FlaggedElement
+ * @mixes OO.ui.mixin.ClippableElement
+ * @mixes OO.ui.mixin.TabIndexedElement
+ *
+ * @constructor
+ * @param {OO.ui.Toolbar} toolbar
+ * @param {Object} [config] Configuration options
+ * @param {string} [config.header] Text to display at the top of the popup
+ */
+OO.ui.PopupToolGroup = function OoUiPopupToolGroup( toolbar, config ) {
+	// Allow passing positional parameters inside the config object
+	if ( OO.isPlainObject( toolbar ) &amp;&amp; config === undefined ) {
+		config = toolbar;
+		toolbar = config.toolbar;
+	}
+
+	// Configuration initialization
+	config = $.extend( {
+		indicator: config.indicator === undefined ? ( toolbar.position === 'bottom' ? 'up' : 'down' ) : config.indicator
+	}, config );
+
+	// Parent constructor
+	OO.ui.PopupToolGroup.parent.call( this, toolbar, config );
+
+	// Properties
+	this.active = false;
+	this.dragging = false;
+	this.onBlurHandler = this.onBlur.bind( this );
+	this.$handle = $( '&lt;span>' );
+
+	// Mixin constructors
+	OO.ui.mixin.IconElement.call( this, config );
+	OO.ui.mixin.IndicatorElement.call( this, config );
+	OO.ui.mixin.LabelElement.call( this, config );
+	OO.ui.mixin.TitledElement.call( this, config );
+	OO.ui.mixin.FlaggedElement.call( this, config );
+	OO.ui.mixin.ClippableElement.call( this, $.extend( {}, config, { $clippable: this.$group } ) );
+	OO.ui.mixin.TabIndexedElement.call( this, $.extend( {}, config, { $tabIndexed: this.$handle } ) );
+
+	// Events
+	this.$handle.on( {
+		keydown: this.onHandleMouseKeyDown.bind( this ),
+		keyup: this.onHandleMouseKeyUp.bind( this ),
+		mousedown: this.onHandleMouseKeyDown.bind( this ),
+		mouseup: this.onHandleMouseKeyUp.bind( this )
+	} );
+
+	// Initialization
+	this.$handle
+		.addClass( 'oo-ui-popupToolGroup-handle' )
+		.attr( 'role', 'button' )
+		.append( this.$icon, this.$label, this.$indicator );
+	// If the pop-up should have a header, add it to the top of the toolGroup.
+	// Note: If this feature is useful for other widgets, we could abstract it into an
+	// OO.ui.HeaderedElement mixin constructor.
+	if ( config.header !== undefined ) {
+		this.$group
+			.prepend( $( '&lt;span>' )
+				.addClass( 'oo-ui-popupToolGroup-header' )
+				.text( config.header )
+			);
+	}
+	this.$element
+		.addClass( 'oo-ui-popupToolGroup' )
+		.prepend( this.$handle );
+};
+
+/* Setup */
+
+OO.inheritClass( OO.ui.PopupToolGroup, OO.ui.ToolGroup );
+OO.mixinClass( OO.ui.PopupToolGroup, OO.ui.mixin.IconElement );
+OO.mixinClass( OO.ui.PopupToolGroup, OO.ui.mixin.IndicatorElement );
+OO.mixinClass( OO.ui.PopupToolGroup, OO.ui.mixin.LabelElement );
+OO.mixinClass( OO.ui.PopupToolGroup, OO.ui.mixin.TitledElement );
+OO.mixinClass( OO.ui.PopupToolGroup, OO.ui.mixin.FlaggedElement );
+OO.mixinClass( OO.ui.PopupToolGroup, OO.ui.mixin.ClippableElement );
+OO.mixinClass( OO.ui.PopupToolGroup, OO.ui.mixin.TabIndexedElement );
+
+/* Methods */
+
+/**
+ * @inheritdoc OO.ui.mixin.ClippableElement
+ */
+OO.ui.PopupToolGroup.prototype.getHorizontalAnchorEdge = function () {
+	var out;
+	if ( this.$element.hasClass( 'oo-ui-popupToolGroup-right' ) ) {
+		out = 'right';
+	} else {
+		out = 'left';
+	}
+	// Flip for RTL
+	if ( this.$element.css( 'direction' ) === 'rtl' ) {
+		out = ( out === 'left' ) ? 'right' : 'left';
+	}
+	return out;
+};
+
+/**
+ * @inheritdoc OO.ui.mixin.ClippableElement
+ */
+OO.ui.PopupToolGroup.prototype.getVerticalAnchorEdge = function () {
+	if ( this.toolbar.position === 'bottom' ) {
+		return 'bottom';
+	}
+	return 'top';
+};
+
+/**
+ * @inheritdoc
+ */
+OO.ui.PopupToolGroup.prototype.setDisabled = function () {
+	// Parent method
+	OO.ui.PopupToolGroup.parent.prototype.setDisabled.apply( this, arguments );
+
+	if ( this.isDisabled() &amp;&amp; this.isElementAttached() ) {
+		this.setActive( false );
+	}
+};
+
+/**
+ * Handle focus being lost.
+ *
+ * The event is actually generated from a mouseup/keyup, so it is not a normal blur event object.
+ *
+ * @protected
+ * @param {MouseEvent|KeyboardEvent} e Mouse up or key up event
+ */
+OO.ui.PopupToolGroup.prototype.onBlur = function ( e ) {
+	// Only deactivate when clicking outside the dropdown element
+	if ( $( e.target ).closest( '.oo-ui-popupToolGroup' )[ 0 ] !== this.$element[ 0 ] ) {
+		this.setActive( false );
+	}
+};
+
+/**
+ * @inheritdoc
+ */
+OO.ui.PopupToolGroup.prototype.onMouseKeyUp = function ( e ) {
+	// Only close toolgroup when a tool was actually selected
+	if (
+		!this.isDisabled() &amp;&amp; this.pressed &amp;&amp; this.pressed === this.findTargetTool( e ) &amp;&amp;
+		( e.which === OO.ui.MouseButtons.LEFT || e.which === OO.ui.Keys.SPACE || e.which === OO.ui.Keys.ENTER )
+	) {
+		this.setActive( false );
+	}
+	return OO.ui.PopupToolGroup.parent.prototype.onMouseKeyUp.call( this, e );
+};
+
+/**
+ * Handle mouse up and key up events.
+ *
+ * @protected
+ * @param {jQuery.Event} e Mouse up or key up event
+ */
+OO.ui.PopupToolGroup.prototype.onHandleMouseKeyUp = function ( e ) {
+	if (
+		!this.isDisabled() &amp;&amp;
+		( e.which === OO.ui.MouseButtons.LEFT || e.which === OO.ui.Keys.SPACE || e.which === OO.ui.Keys.ENTER )
+	) {
+		return false;
+	}
+};
+
+/**
+ * Handle mouse down and key down events.
+ *
+ * @protected
+ * @param {jQuery.Event} e Mouse down or key down event
+ */
+OO.ui.PopupToolGroup.prototype.onHandleMouseKeyDown = function ( e ) {
+	if (
+		!this.isDisabled() &amp;&amp;
+		( e.which === OO.ui.MouseButtons.LEFT || e.which === OO.ui.Keys.SPACE || e.which === OO.ui.Keys.ENTER )
+	) {
+		this.setActive( !this.active );
+		return false;
+	}
+};
+
+/**
+ * Switch into 'active' mode.
+ *
+ * When active, the popup is visible. A mouseup event anywhere in the document will trigger
+ * deactivation.
+ *
+ * @param {boolean} value The active state to set
+ */
+OO.ui.PopupToolGroup.prototype.setActive = function ( value ) {
+	var containerWidth, containerLeft;
+	value = !!value;
+	if ( this.active !== value ) {
+		this.active = value;
+		if ( value ) {
+			this.getElementDocument().addEventListener( 'mouseup', this.onBlurHandler, true );
+			this.getElementDocument().addEventListener( 'keyup', this.onBlurHandler, true );
+
+			this.$clippable.css( 'left', '' );
+			// Try anchoring the popup to the left first
+			this.$element.addClass( 'oo-ui-popupToolGroup-active oo-ui-popupToolGroup-left' );
+			this.setFlags( { progressive: true } );
+			this.toggleClipping( true );
+			if ( this.isClippedHorizontally() || this.isFloatableOutOfView() ) {
+				// Anchoring to the left caused the popup to clip, so anchor it to the right instead
+				this.toggleClipping( false );
+				this.$element
+					.removeClass( 'oo-ui-popupToolGroup-left' )
+					.addClass( 'oo-ui-popupToolGroup-right' );
+				this.toggleClipping( true );
+			}
+			if ( this.isClippedHorizontally() || this.isFloatableOutOfView() ) {
+				// Anchoring to the right also caused the popup to clip, so just make it fill the container
+				containerWidth = this.$clippableScrollableContainer.width();
+				containerLeft = this.$clippableScrollableContainer[ 0 ] === document.documentElement ?
+					0 :
+					this.$clippableScrollableContainer.offset().left;
+
+				this.toggleClipping( false );
+				this.$element.removeClass( 'oo-ui-popupToolGroup-right' );
+
+				this.$clippable.css( {
+					left: -( this.$element.offset().left - containerLeft ),
+					width: containerWidth
+				} );
+			}
+		} else {
+			this.getElementDocument().removeEventListener( 'mouseup', this.onBlurHandler, true );
+			this.getElementDocument().removeEventListener( 'keyup', this.onBlurHandler, true );
+			this.$element.removeClass(
+				'oo-ui-popupToolGroup-active oo-ui-popupToolGroup-left  oo-ui-popupToolGroup-right'
+			);
+			this.setFlags( { progressive: false } );
+			this.toggleClipping( false );
+		}
+	}
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="OO.ui.html">ui</a></li><li><a href="OO.ui.ActionFieldLayout.html">ActionFieldLayout</a></li><li><a href="OO.ui.ActionSet.html">ActionSet</a></li><li><a href="OO.ui.ActionWidget.html">ActionWidget</a></li><li><a href="OO.ui.ApexTheme.html">ApexTheme</a></li><li><a href="OO.ui.BarToolGroup.html">BarToolGroup</a></li><li><a href="OO.ui.BlankTheme.html">BlankTheme</a></li><li><a href="OO.ui.BookletLayout.html">BookletLayout</a></li><li><a href="OO.ui.ButtonGroupWidget.html">ButtonGroupWidget</a></li><li><a href="OO.ui.ButtonInputWidget.html">ButtonInputWidget</a></li><li><a href="OO.ui.ButtonOptionWidget.html">ButtonOptionWidget</a></li><li><a href="OO.ui.ButtonSelectWidget.html">ButtonSelectWidget</a></li><li><a href="OO.ui.ButtonWidget.html">ButtonWidget</a></li><li><a href="OO.ui.CapsuleItemWidget.html">CapsuleItemWidget</a></li><li><a href="OO.ui.CapsuleMultiselectWidget.html">CapsuleMultiselectWidget</a></li><li><a href="OO.ui.CheckboxInputWidget.html">CheckboxInputWidget</a></li><li><a href="OO.ui.CheckboxMultioptionWidget.html">CheckboxMultioptionWidget</a></li><li><a href="OO.ui.CheckboxMultiselectInputWidget.html">CheckboxMultiselectInputWidget</a></li><li><a href="OO.ui.CheckboxMultiselectWidget.html">CheckboxMultiselectWidget</a></li><li><a href="OO.ui.ComboBoxInputWidget.html">ComboBoxInputWidget</a></li><li><a href="OO.ui.DecoratedOptionWidget.html">DecoratedOptionWidget</a></li><li><a href="OO.ui.Dialog.html">Dialog</a></li><li><a href="OO.ui.DropdownInputWidget.html">DropdownInputWidget</a></li><li><a href="OO.ui.DropdownWidget.html">DropdownWidget</a></li><li><a href="OO.ui.Element.html">Element</a></li><li><a href="OO.ui.Error.html">Error</a></li><li><a href="OO.ui.FieldLayout.html">FieldLayout</a></li><li><a href="OO.ui.FieldsetLayout.html">FieldsetLayout</a></li><li><a href="OO.ui.FormLayout.html">FormLayout</a></li><li><a href="OO.ui.HiddenInputWidget.html">HiddenInputWidget</a></li><li><a href="OO.ui.HorizontalLayout.html">HorizontalLayout</a></li><li><a href="OO.ui.HtmlSnippet.html">HtmlSnippet</a></li><li><a href="OO.ui.IconWidget.html">IconWidget</a></li><li><a href="OO.ui.IndexLayout.html">IndexLayout</a></li><li><a href="OO.ui.IndicatorWidget.html">IndicatorWidget</a></li><li><a href="OO.ui.InputWidget.html">InputWidget</a></li><li><a href="OO.ui.LabelWidget.html">LabelWidget</a></li><li><a href="OO.ui.Layout.html">Layout</a></li><li><a href="OO.ui.ListToolGroup.html">ListToolGroup</a></li><li><a href="OO.ui.MenuLayout.html">MenuLayout</a></li><li><a href="OO.ui.MenuOptionWidget.html">MenuOptionWidget</a></li><li><a href="OO.ui.MenuSectionOptionWidget.html">MenuSectionOptionWidget</a></li><li><a href="OO.ui.MenuSelectWidget.html">MenuSelectWidget</a></li><li><a href="OO.ui.MenuTagMultiselectWidget.html">MenuTagMultiselectWidget</a></li><li><a href="OO.ui.MenuToolGroup.html">MenuToolGroup</a></li><li><a href="OO.ui.MessageDialog.html">MessageDialog</a></li><li><a href="OO.ui.mixin.html">mixin</a></li><li><a href="OO.ui.MultilineTextInputWidget.html">MultilineTextInputWidget</a></li><li><a href="OO.ui.MultioptionWidget.html">MultioptionWidget</a></li><li><a href="OO.ui.MultiselectWidget.html">MultiselectWidget</a></li><li><a href="OO.ui.NumberInputWidget.html">NumberInputWidget</a></li><li><a href="OO.ui.OptionWidget.html">OptionWidget</a></li><li><a href="OO.ui.OutlineControlsWidget.html">OutlineControlsWidget</a></li><li><a href="OO.ui.OutlineOptionWidget.html">OutlineOptionWidget</a></li><li><a href="OO.ui.OutlineSelectWidget.html">OutlineSelectWidget</a></li><li><a href="OO.ui.PageLayout.html">PageLayout</a></li><li><a href="OO.ui.PanelLayout.html">PanelLayout</a></li><li><a href="OO.ui.PopupButtonWidget.html">PopupButtonWidget</a></li><li><a href="OO.ui.PopupTagMultiselectWidget.html">PopupTagMultiselectWidget</a></li><li><a href="OO.ui.PopupTool.html">PopupTool</a></li><li><a href="OO.ui.PopupToolGroup.html">PopupToolGroup</a></li><li><a href="OO.ui.PopupWidget.html">PopupWidget</a></li><li><a href="OO.ui.Process.html">Process</a></li><li><a href="OO.ui.ProcessDialog.html">ProcessDialog</a></li><li><a href="OO.ui.ProgressBarWidget.html">ProgressBarWidget</a></li><li><a href="OO.ui.RadioInputWidget.html">RadioInputWidget</a></li><li><a href="OO.ui.RadioOptionWidget.html">RadioOptionWidget</a></li><li><a href="OO.ui.RadioSelectInputWidget.html">RadioSelectInputWidget</a></li><li><a href="OO.ui.RadioSelectWidget.html">RadioSelectWidget</a></li><li><a href="OO.ui.SearchInputWidget.html">SearchInputWidget</a></li><li><a href="OO.ui.SearchWidget.html">SearchWidget</a></li><li><a href="OO.ui.SelectFileWidget.html">SelectFileWidget</a></li><li><a href="OO.ui.SelectWidget.html">SelectWidget</a></li><li><a href="OO.ui.StackLayout.html">StackLayout</a></li><li><a href="OO.ui.TabOptionWidget.html">TabOptionWidget</a></li><li><a href="OO.ui.TabPanelLayout.html">TabPanelLayout</a></li><li><a href="OO.ui.TabSelectWidget.html">TabSelectWidget</a></li><li><a href="OO.ui.TagItemWidget.html">TagItemWidget</a></li><li><a href="OO.ui.TagMultiselectWidget.html">TagMultiselectWidget</a></li><li><a href="OO.ui.TextInputWidget.html">TextInputWidget</a></li><li><a href="OO.ui.Theme.html">Theme</a></li><li><a href="OO.ui.ToggleButtonWidget.html">ToggleButtonWidget</a></li><li><a href="OO.ui.ToggleSwitchWidget.html">ToggleSwitchWidget</a></li><li><a href="OO.ui.ToggleWidget.html">ToggleWidget</a></li><li><a href="OO.ui.Tool.html">Tool</a></li><li><a href="OO.ui.Toolbar.html">Toolbar</a></li><li><a href="OO.ui.ToolFactory.html">ToolFactory</a></li><li><a href="OO.ui.ToolGroup.html">ToolGroup</a></li><li><a href="OO.ui.ToolGroupFactory.html">ToolGroupFactory</a></li><li><a href="OO.ui.ToolGroupTool.html">ToolGroupTool</a></li><li><a href="OO.ui.Widget.html">Widget</a></li><li><a href="OO.ui.WikimediaUITheme.html">WikimediaUITheme</a></li><li><a href="OO.ui.Window.html">Window</a></li><li><a href="OO.ui.WindowInstance.html">WindowInstance</a></li><li><a href="OO.ui.WindowManager.html">WindowManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:changeAchangeeventisemittedwhentheon/offstateofthetogglechanges.">change
+
+A change event is emitted when the on/off state of the toggle changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhentheselectedstateoftheoptionchanges.">change
+
+A change event is emitted when the selected state of the option changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofitemschanges,oranitemisselectedordeselected.">change
+
+A change event is emitted when the set of items changes, or an item is selected or deselected.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofselecteditemschanges.">change
+
+A change event is emitted when the set of selected items changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthevalueoftheinputchanges.">change
+
+A change event is emitted when the value of the input changes.</a></li><li><a href="global.html#event:dragendAdragendeventisemittedwhentheuserdragsanitemandreleasesthemouse,thusterminatingthedragoperation.">dragend
+A dragend event is emitted when the user drags an item and releases the mouse,
+thus terminating the drag operation.</a></li><li><a href="global.html#event:dragstartAdragstarteventisemittedwhentheuserclicksandbeginsdragginganitem.">dragstart
+
+A dragstart event is emitted when the user clicks and begins dragging an item.</a></li><li><a href="global.html#event:dropAdropeventisemittedwhentheuserdragsanitemandthenreleasesthemousebuttonoveravalidtarget.">drop
+A drop event is emitted when the user drags an item and then releases the mouse button
+over a valid target.</a></li><li><a href="global.html#event:active">active</a></li><li><a href="global.html#event:add">add</a></li><li><a href="global.html#event:change">change</a></li><li><a href="global.html#event:click">click</a></li><li><a href="global.html#event:closing">closing</a></li><li><a href="global.html#event:disable">disable</a></li><li><a href="global.html#event:drag">drag</a></li><li><a href="global.html#event:draggable">draggable</a></li><li><a href="global.html#event:enter">enter</a></li><li><a href="global.html#event:labelChange">labelChange</a></li><li><a href="global.html#event:move">move</a></li><li><a href="global.html#event:navigate">navigate</a></li><li><a href="global.html#event:opening">opening</a></li><li><a href="global.html#event:remove">remove</a></li><li><a href="global.html#event:reorder">reorder</a></li><li><a href="global.html#event:resize">resize</a></li><li><a href="global.html#event:set">set</a></li><li><a href="global.html#event:submit">submit</a></li><li><a href="global.html#event:toggle">toggle</a></li><li><a href="global.html#event:update">update</a></li><li><a href="global.html#event:valid">valid</a></li><li><a href="global.html#event:visibleItemChange">visibleItemChange</a></li><li><a href="global.html#event:flagAflageventisemittedwhenthe#clearFlagsor#setFlagsmethodsareused.The%2560changes%2560parametercontainsthenameofeachmodifiedflagandindicateswhetheritwasaddedorremoved.">flag
+A flag event is emitted when the #clearFlags or #setFlags methods are used. The `changes`
+parameter contains the name of each modified flag and indicates whether it was
+added or removed.</a></li><li><a href="OO.ui.ButtonElement.html#event:click">click</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.SelectWidget.html#event:add">add</a></li><li><a href="OO.ui.SelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.SelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.SelectWidget.html#event:press">press</a></li><li><a href="OO.ui.SelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.SelectWidget.html#event:select">select</a></li><li><a href="OO.ui.TabSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.TabSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.TabSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.TabSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.TabSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.TabSelectWidget.html#event:select">select</a></li><li><a href="global.html#event:readyThemenuisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The menu is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:readyThepopupisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The popup is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:removeAremoveactionwasperformedontheitem">remove
+
+A remove action was performed on the item</a></li><li><a href="global.html#event:resizeAresizeeventisemittedwhenthewidget'sdimensionschangetoaccomodatenewlyaddeditemsorcurrentuserinput.">resize
+
+A resize event is emitted when the widget's dimensions change to accomodate newly added items or
+current user input.</a></li><li><a href="global.html#event:selectAselecteventisemittedwhenanitemisselectedordeselected.">select
+
+A select event is emitted when an item is selected or deselected.</a></li><li><a href="global.html#event:selectThetagwidgetwasselected.Thiscanoccurwhenthewidgetiseitherclickedorenterwaspressedonit.">select
+
+The tag widget was selected. This can occur when the widget
+is either clicked or enter was pressed on it.</a></li><li><a href="global.html#event:updateStateAn'updateState'eventmustbeemittedontheToolbar(bycalling%2560toolbar.emit('updateState')%2560)everytimethestateoftheapplicationusingthetoolbarchanges,andanupdatetothestateoftoolsisrequired.">updateState
+
+An 'updateState' event must be emitted on the Toolbar (by calling `toolbar.emit( 'updateState' )`)
+every time the state of the application using the toolbar changes, and an update to the state of
+tools is required.</a></li></ul><h3>Mixins</h3><ul><li><a href="OO.ui.mixin.AccessKeyedElement.html">AccessKeyedElement</a></li><li><a href="OO.ui.mixin.ButtonElement.html">ButtonElement</a></li><li><a href="OO.ui.mixin.ClippableElement.html">ClippableElement</a></li><li><a href="OO.ui.mixin.DraggableElement.html">DraggableElement</a></li><li><a href="OO.ui.mixin.DraggableGroupElement.html">DraggableGroupElement</a></li><li><a href="OO.ui.mixin.FlaggedElement.html">FlaggedElement</a></li><li><a href="OO.ui.mixin.FloatableElement.html">FloatableElement</a></li><li><a href="OO.ui.mixin.GroupElement.html">GroupElement</a></li><li><a href="OO.ui.mixin.GroupWidget.html">GroupWidget</a></li><li><a href="OO.ui.mixin.IconElement.html">IconElement</a></li><li><a href="OO.ui.mixin.IndicatorElement.html">IndicatorElement</a></li><li><a href="OO.ui.mixin.LabelElement.html">LabelElement</a></li><li><a href="OO.ui.mixin.LookupElement.html">LookupElement</a></li><li><a href="OO.ui.mixin.PendingElement.html">PendingElement</a></li><li><a href="OO.ui.mixin.PopupElement.html">PopupElement</a></li><li><a href="OO.ui.mixin.RequestManager.html">RequestManager</a></li><li><a href="OO.ui.mixin.TabIndexedElement.html">TabIndexedElement</a></li><li><a href="OO.ui.mixin.TitledElement.html">TitledElement</a></li></ul><h3>Global</h3><ul><li><a href="global.html#isActive">isActive</a></li><li><a href="global.html#setActive">setActive</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Jan 11 2018 12:31:36 GMT+0530 (IST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -17,36 +17,36 @@
  *
  * @class
  * @extends OO.ui.Widget
- * @mixins OO.ui.mixin.GroupWidget
- * @mixins OO.ui.mixin.DraggableGroupElement
- * @mixins OO.ui.mixin.IndicatorElement
- * @mixins OO.ui.mixin.IconElement
- * @mixins OO.ui.mixin.TabIndexedElement
- * @mixins OO.ui.mixin.FlaggedElement
+ * @mixes OO.ui.mixin.GroupWidget
+ * @mixes OO.ui.mixin.DraggableGroupElement
+ * @mixes OO.ui.mixin.IndicatorElement
+ * @mixes OO.ui.mixin.IconElement
+ * @mixes OO.ui.mixin.TabIndexedElement
+ * @mixes OO.ui.mixin.FlaggedElement
  *
  * @constructor
  * @param {Object} config Configuration object
- * @cfg {Object} [input] Configuration options for the input widget
- * @cfg {OO.ui.InputWidget} [inputWidget] An optional input widget. If given, it will
+ * @param {Object} [config.input] Configuration options for the input widget
+ * @param {OO.ui.InputWidget} [config.inputWidget] An optional input widget. If given, it will
  *  replace the input widget used in the TagMultiselectWidget. If not given,
  *  TagMultiselectWidget creates its own.
- * @cfg {boolean} [inputPosition='inline'] Position of the input. Options are:
+ * @param {boolean} [config.inputPosition='inline'] Position of the input. Options are:
  * 	- inline: The input is invisible, but exists inside the tag list, so
  * 		the user types into the tag groups to add tags.
  * 	- outline: The input is underneath the tag area.
  * 	- none: No input supplied
- * @cfg {boolean} [allowEditTags=true] Allow editing of the tags by clicking them
- * @cfg {boolean} [allowArbitrary=false] Allow data items to be added even if
+ * @param {boolean} [config.allowEditTags=true] Allow editing of the tags by clicking them
+ * @param {boolean} [config.allowArbitrary=false] Allow data items to be added even if
  *  not present in the menu.
- * @cfg {Object[]} [allowedValues] An array representing the allowed items
+ * @param {Object[]} [config.allowedValues] An array representing the allowed items
  *  by their datas.
- * @cfg {boolean} [allowDuplicates=false] Allow duplicate items to be added
- * @cfg {boolean} [allowDisplayInvalidTags=false] Allow the display of
+ * @param {boolean} [config.allowDuplicates=false] Allow duplicate items to be added
+ * @param {boolean} [config.allowDisplayInvalidTags=false] Allow the display of
  *  invalid tags. These tags will display with an invalid state, and
  *  the widget as a whole will have an invalid state if any invalid tags
  *  are present.
- * @cfg {boolean} [allowReordering=true] Allow reordering of the items
- * @cfg {Object[]|String[]} [selected] A set of selected tags. If given,
+ * @param {boolean} [config.allowReordering=true] Allow reordering of the items
+ * @param {Object[]|String[]} [config.selected] A set of selected tags. If given,
  *  these will appear in the tag list on initialization, as long as they
  *  pass the validity tests.
  */

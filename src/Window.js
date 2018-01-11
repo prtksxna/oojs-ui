@@ -36,11 +36,11 @@
  * @abstract
  * @class
  * @extends OO.ui.Element
- * @mixins OO.EventEmitter
+ * @mixes OO.EventEmitter
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {string} [size] Symbolic name of the dialog size: `small`, `medium`, `large`, `larger` or
+ * @param {string} [config.size] Symbolic name of the dialog size: `small`, `medium`, `large`, `larger` or
  *  `full`.  If omitted, the value of the {@link #static-size static size} property will be used.
  */
 OO.ui.Window = function OoUiWindow( config ) {

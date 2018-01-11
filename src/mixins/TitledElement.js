@@ -12,15 +12,13 @@
  *     } );
  *     $( 'body' ).append( button.$element );
  *
- * @abstract
- * @class
+ * @mixin
  *
- * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {jQuery} [$titled] The element to which the `title` attribute is applied.
+ * @param {jQuery} [config.$titled] The element to which the `title` attribute is applied.
  *  If this config is omitted, the title functionality is applied to $element, the
  *  element created by the class.
- * @cfg {string|Function} [title] The title text or a function that returns text. If
+ * @param {string|Function} [config.title] The title text or a function that returns text. If
  *  this config is omitted, the value of the {@link #static-title static title} property is used.
  */
 OO.ui.mixin.TitledElement = function OoUiMixinTitledElement( config ) {

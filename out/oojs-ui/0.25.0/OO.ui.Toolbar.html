@@ -1,0 +1,4275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Class: Toolbar</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Class: Toolbar</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2><span class="attribs"><span class="type-signature"></span></span>
+            <span class="ancestors"><a href="OO.ui.html">.ui</a>.</span>Toolbar<span class="signature">(toolFactory, toolGroupFactory, config<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+    
+
+    
+    <h4 class="name" id="Toolbar"><span class="type-signature"></span>new Toolbar<span class="signature">(toolFactory, toolGroupFactory, config<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Toolbars are complex interface components that permit users to easily access a variety
+of <a href="OO.ui.Tool.html">tools</a> (e.g., formatting commands) and actions, which are additional commands that are
+part of the toolbar, but not configured as tools.</p>
+<p>Individual tools are customized and then registered with a <a href="OO.ui.ToolFactory.html">tool factory</a>, which creates
+the tools on demand. Each tool has a symbolic name (used when registering the tool), a title (e.g., ‘Insert
+image’), and an icon.</p>
+<p>Individual tools are organized in <a href="OO.ui.ToolGroup.html">toolgroups</a>, which can be <a href="OO.ui.MenuToolGroup.html">menus</a>
+of tools, <a href="OO.ui.ListToolGroup.html">lists</a> of tools, or a single <a href="OO.ui.BarToolGroup.html">bar</a> of tools.
+The arrangement and order of the toolgroups is customized when the toolbar is set up. Tools can be presented in
+any order, but each can only appear once in the toolbar.</p>
+<p>The toolbar can be synchronized with the state of the external &quot;application&quot;, like a text
+editor's editing area, marking tools as active/inactive (e.g. a 'bold' tool would be shown as
+active when the text cursor was inside bolded text) or enabled/disabled (e.g. a table caption
+tool would be disabled while the user is not editing a table). A state change is signalled by
+emitting the 'updateState' event, which calls Tools'
+<a href="OO.ui.Tool.html#onUpdateState">onUpdateState method</a>.</p>
+<p>The following is an example of a basic toolbar.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>toolFactory</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="OO.ui.ToolFactory.html">OO.ui.ToolFactory</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Factory for creating tools</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>toolGroupFactory</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="OO.ui.ToolGroupFactory.html">OO.ui.ToolGroupFactory</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Factory for creating toolgroups</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>config</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Configuration options</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>actions</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last"><p>Add an actions section to the toolbar. Actions are commands that are included
+ in the toolbar, but are not configured as tools. By default, actions are displayed on the right side of
+ the toolbar.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>position</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    'top'
+                
+                </td>
+            
+
+            <td class="description last"><p>Whether the toolbar is positioned above ('top') or below ('bottom') content.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <dt class="mixes">Mixes In:</dt>
+
+        <dd class="mixes"><ul>
+        
+            <li>OO.EventEmitter</li>
+        
+            <li><a href="OO.ui.mixin.GroupElement.html">OO.ui.mixin.GroupElement</a></li>
+        
+        </ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Toolbar.js.html">Toolbar.js</a>, <a href="Toolbar.js.html#line283">line 283</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>// Example of a toolbar
+    // Create the toolbar
+    var toolFactory = new OO.ui.ToolFactory();
+    var toolGroupFactory = new OO.ui.ToolGroupFactory();
+    var toolbar = new OO.ui.Toolbar( toolFactory, toolGroupFactory );
+
+    // We will be placing status text in this element when tools are used
+    var $area = $( '&lt;p>' ).text( 'Toolbar example' );
+
+    // Define the tools that we're going to place in our toolbar
+
+    // Create a class inheriting from OO.ui.Tool
+    function SearchTool() {
+        SearchTool.parent.apply( this, arguments );
+    }
+    OO.inheritClass( SearchTool, OO.ui.Tool );
+    // Each tool must have a 'name' (used as an internal identifier, see later) and at least one
+    // of 'icon' and 'title' (displayed icon and text).
+    SearchTool.static.name = 'search';
+    SearchTool.static.icon = 'search';
+    SearchTool.static.title = 'Search...';
+    // Defines the action that will happen when this tool is selected (clicked).
+    SearchTool.prototype.onSelect = function () {
+        $area.text( 'Search tool clicked!' );
+        // Never display this tool as "active" (selected).
+        this.setActive( false );
+    };
+    SearchTool.prototype.onUpdateState = function () {};
+    // Make this tool available in our toolFactory and thus our toolbar
+    toolFactory.register( SearchTool );
+
+    // Register two more tools, nothing interesting here
+    function SettingsTool() {
+        SettingsTool.parent.apply( this, arguments );
+    }
+    OO.inheritClass( SettingsTool, OO.ui.Tool );
+    SettingsTool.static.name = 'settings';
+    SettingsTool.static.icon = 'settings';
+    SettingsTool.static.title = 'Change settings';
+    SettingsTool.prototype.onSelect = function () {
+        $area.text( 'Settings tool clicked!' );
+        this.setActive( false );
+    };
+    SettingsTool.prototype.onUpdateState = function () {};
+    toolFactory.register( SettingsTool );
+
+    // Register two more tools, nothing interesting here
+    function StuffTool() {
+        StuffTool.parent.apply( this, arguments );
+    }
+    OO.inheritClass( StuffTool, OO.ui.Tool );
+    StuffTool.static.name = 'stuff';
+    StuffTool.static.icon = 'ellipsis';
+    StuffTool.static.title = 'More stuff';
+    StuffTool.prototype.onSelect = function () {
+        $area.text( 'More stuff tool clicked!' );
+        this.setActive( false );
+    };
+    StuffTool.prototype.onUpdateState = function () {};
+    toolFactory.register( StuffTool );
+
+    // This is a PopupTool. Rather than having a custom 'onSelect' action, it will display a
+    // little popup window (a PopupWidget).
+    function HelpTool( toolGroup, config ) {
+        OO.ui.PopupTool.call( this, toolGroup, $.extend( { popup: {
+            padded: true,
+            label: 'Help',
+            head: true
+        } }, config ) );
+        this.popup.$body.append( '&lt;p>I am helpful!&lt;/p>' );
+    }
+    OO.inheritClass( HelpTool, OO.ui.PopupTool );
+    HelpTool.static.name = 'help';
+    HelpTool.static.icon = 'help';
+    HelpTool.static.title = 'Help';
+    toolFactory.register( HelpTool );
+
+    // Finally define which tools and in what order appear in the toolbar. Each tool may only be
+    // used once (but not all defined tools must be used).
+    toolbar.setup( [
+        {
+            // 'bar' tool groups display tools' icons only, side-by-side.
+            type: 'bar',
+            include: [ 'search', 'help' ]
+        },
+        {
+            // 'list' tool groups display both the titles and icons, in a dropdown list.
+            type: 'list',
+            indicator: 'down',
+            label: 'More',
+            include: [ 'settings', 'stuff' ]
+        }
+        // Note how the tools themselves are toolgroup-agnostic - the same tool can be displayed
+        // either in a 'list' or a 'bar'. There is a 'menu' tool group too, not showcased here,
+        // since it's more complicated to use. (See the next example snippet on this page.)
+    ] );
+
+    // Create some UI around the toolbar and place it in the document
+    var frame = new OO.ui.PanelLayout( {
+        expanded: false,
+        framed: true
+    } );
+    var contentFrame = new OO.ui.PanelLayout( {
+        expanded: false,
+        padded: true
+    } );
+    frame.$element.append(
+        toolbar.$element,
+        contentFrame.$element.append( $area )
+    );
+    $( 'body' ).append( frame.$element );
+
+    // Here is where the toolbar is actually built. This must be done after inserting it into the
+    // document.
+    toolbar.initialize();
+    toolbar.emit( 'updateState' );
+
+The following example extends the previous one to illustrate 'menu' toolgroups and the usage of
+'updateState' event.
+
+    </code></pre>
+
+    <pre class="prettyprint"><code>// Create the toolbar
+    var toolFactory = new OO.ui.ToolFactory();
+    var toolGroupFactory = new OO.ui.ToolGroupFactory();
+    var toolbar = new OO.ui.Toolbar( toolFactory, toolGroupFactory );
+
+    // We will be placing status text in this element when tools are used
+    var $area = $( '&lt;p>' ).text( 'Toolbar example' );
+
+    // Define the tools that we're going to place in our toolbar
+
+    // Create a class inheriting from OO.ui.Tool
+    function SearchTool() {
+        SearchTool.parent.apply( this, arguments );
+    }
+    OO.inheritClass( SearchTool, OO.ui.Tool );
+    // Each tool must have a 'name' (used as an internal identifier, see later) and at least one
+    // of 'icon' and 'title' (displayed icon and text).
+    SearchTool.static.name = 'search';
+    SearchTool.static.icon = 'search';
+    SearchTool.static.title = 'Search...';
+    // Defines the action that will happen when this tool is selected (clicked).
+    SearchTool.prototype.onSelect = function () {
+        $area.text( 'Search tool clicked!' );
+        // Never display this tool as "active" (selected).
+        this.setActive( false );
+    };
+    SearchTool.prototype.onUpdateState = function () {};
+    // Make this tool available in our toolFactory and thus our toolbar
+    toolFactory.register( SearchTool );
+
+    // Register two more tools, nothing interesting here
+    function SettingsTool() {
+        SettingsTool.parent.apply( this, arguments );
+        this.reallyActive = false;
+    }
+    OO.inheritClass( SettingsTool, OO.ui.Tool );
+    SettingsTool.static.name = 'settings';
+    SettingsTool.static.icon = 'settings';
+    SettingsTool.static.title = 'Change settings';
+    SettingsTool.prototype.onSelect = function () {
+        $area.text( 'Settings tool clicked!' );
+        // Toggle the active state on each click
+        this.reallyActive = !this.reallyActive;
+        this.setActive( this.reallyActive );
+        // To update the menu label
+        this.toolbar.emit( 'updateState' );
+    };
+    SettingsTool.prototype.onUpdateState = function () {};
+    toolFactory.register( SettingsTool );
+
+    // Register two more tools, nothing interesting here
+    function StuffTool() {
+        StuffTool.parent.apply( this, arguments );
+        this.reallyActive = false;
+    }
+    OO.inheritClass( StuffTool, OO.ui.Tool );
+    StuffTool.static.name = 'stuff';
+    StuffTool.static.icon = 'ellipsis';
+    StuffTool.static.title = 'More stuff';
+    StuffTool.prototype.onSelect = function () {
+        $area.text( 'More stuff tool clicked!' );
+        // Toggle the active state on each click
+        this.reallyActive = !this.reallyActive;
+        this.setActive( this.reallyActive );
+        // To update the menu label
+        this.toolbar.emit( 'updateState' );
+    };
+    StuffTool.prototype.onUpdateState = function () {};
+    toolFactory.register( StuffTool );
+
+    // This is a PopupTool. Rather than having a custom 'onSelect' action, it will display a
+    // little popup window (a PopupWidget). 'onUpdateState' is also already implemented.
+    function HelpTool( toolGroup, config ) {
+        OO.ui.PopupTool.call( this, toolGroup, $.extend( { popup: {
+            padded: true,
+            label: 'Help',
+            head: true
+        } }, config ) );
+        this.popup.$body.append( '&lt;p>I am helpful!&lt;/p>' );
+    }
+    OO.inheritClass( HelpTool, OO.ui.PopupTool );
+    HelpTool.static.name = 'help';
+    HelpTool.static.icon = 'help';
+    HelpTool.static.title = 'Help';
+    toolFactory.register( HelpTool );
+
+    // Finally define which tools and in what order appear in the toolbar. Each tool may only be
+    // used once (but not all defined tools must be used).
+    toolbar.setup( [
+        {
+            // 'bar' tool groups display tools' icons only, side-by-side.
+            type: 'bar',
+            include: [ 'search', 'help' ]
+        },
+        {
+            // 'menu' tool groups display both the titles and icons, in a dropdown menu.
+            // Menu label indicates which items are selected.
+            type: 'menu',
+            indicator: 'down',
+            include: [ 'settings', 'stuff' ]
+        }
+    ] );
+
+    // Create some UI around the toolbar and place it in the document
+    var frame = new OO.ui.PanelLayout( {
+        expanded: false,
+        framed: true
+    } );
+    var contentFrame = new OO.ui.PanelLayout( {
+        expanded: false,
+        padded: true
+    } );
+    frame.$element.append(
+        toolbar.$element,
+        contentFrame.$element.append( $area )
+    );
+    $( 'body' ).append( frame.$element );
+
+    // Here is where the toolbar is actually built. This must be done after inserting it into the
+    // document.
+    toolbar.initialize();
+    toolbar.emit( 'updateState' );</code></pre>
+
+
+
+    
+    </div>
+
+    
+        <h3 class="subsection-title">Extends</h3>
+
+        
+
+
+    <ul>
+        <li><a href="OO.ui.Element.html">OO.ui.Element</a></li>
+    </ul>
+
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="destroy"><span class="type-signature"></span>destroy<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Destroy the toolbar.</p>
+<p>Destroying the toolbar removes all event handlers and DOM elements that constitute the toolbar. Call
+this method whenever you are done using a toolbar.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Toolbar.js.html">Toolbar.js</a>, <a href="Toolbar.js.html#line484">line 484</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getClosestScrollableElementContainer"><span class="type-signature"></span>getClosestScrollableElementContainer<span class="signature">()</span><span class="type-signature"> &rarr; {HTMLElement}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get closest scrollable container.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="OO.ui.Element.html#getClosestScrollableElementContainer">OO.ui.Element#getClosestScrollableElementContainer</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Element.js.html">Element.js</a>, <a href="Element.js.html#line930">line 930</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Closest scrollable container</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">HTMLElement</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getData"><span class="type-signature"></span>getData<span class="signature">()</span><span class="type-signature"> &rarr; {Mixed}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get element data.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="OO.ui.Element.html#getData">OO.ui.Element#getData</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Element.js.html">Element.js</a>, <a href="Element.js.html#line815">line 815</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Element data</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Mixed</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getElementDocument"><span class="type-signature"></span>getElementDocument<span class="signature">()</span><span class="type-signature"> &rarr; {HTMLDocument}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get the DOM document.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="OO.ui.Element.html#getElementDocument">OO.ui.Element#getElementDocument</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Element.js.html">Element.js</a>, <a href="Element.js.html#line911">line 911</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Document object</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">HTMLDocument</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getElementGroup"><span class="type-signature"></span>getElementGroup<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="OO.ui.mixin.GroupElement.html">OO.ui.mixin.GroupElement</a>|null}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get group element is in.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="OO.ui.Element.html#getElementGroup">OO.ui.Element#getElementGroup</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Element.js.html">Element.js</a>, <a href="Element.js.html#line939">line 939</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Group element, null if none</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="OO.ui.mixin.GroupElement.html">OO.ui.mixin.GroupElement</a></span>
+|
+
+<span class="param-type">null</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getElementId"><span class="type-signature"></span>getElementId<span class="signature">()</span><span class="type-signature"> &rarr; {string}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Ensure that the element has an 'id' attribute, setting it to an unique value if it's missing,
+and return its value.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="OO.ui.Element.html#getElementId">OO.ui.Element#getElementId</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Element.js.html">Element.js</a>, <a href="Element.js.html#line848">line 848</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">string</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getElementWindow"><span class="type-signature"></span>getElementWindow<span class="signature">()</span><span class="type-signature"> &rarr; {Window}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get the DOM window.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="OO.ui.Element.html#getElementWindow">OO.ui.Element#getElementWindow</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Element.js.html">Element.js</a>, <a href="Element.js.html#line921">line 921</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Window object</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Window</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getTagName"><span class="type-signature"></span>getTagName<span class="signature">()</span><span class="type-signature"> &rarr; {string}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get the HTML tag name.</p>
+<p>Override this method to base the result on instance information.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="OO.ui.Element.html#getTagName">OO.ui.Element#getTagName</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Element.js.html">Element.js</a>, <a href="Element.js.html#line893">line 893</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>HTML tag name</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">string</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getToolAccelerator"><span class="type-signature"></span>getToolAccelerator<span class="signature">(name)</span><span class="type-signature"> &rarr; {string|undefined}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get accelerator label for tool.</p>
+<p>The OOjs UI library does not contain an accelerator system, but this is the hook for one. To
+use an accelerator system, subclass the toolbar and override this method, which is meant to return a label
+that describes the accelerator keys for the tool passed (by symbolic name) to the method.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>name</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Symbolic name of tool</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Toolbar.js.html">Toolbar.js</a>, <a href="Toolbar.js.html#line530">line 530</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Tool accelerator label if available</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">string</span>
+|
+
+<span class="param-type">undefined</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getToolFactory"><span class="type-signature"></span>getToolFactory<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="OO.ui.ToolFactory.html">OO.ui.ToolFactory</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get the tool factory.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Toolbar.js.html">Toolbar.js</a>, <a href="Toolbar.js.html#line355">line 355</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Tool factory</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="OO.ui.ToolFactory.html">OO.ui.ToolFactory</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getToolGroupFactory"><span class="type-signature"></span>getToolGroupFactory<span class="signature">()</span><span class="type-signature"> &rarr; {OO.Factory}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Get the toolgroup factory.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Toolbar.js.html">Toolbar.js</a>, <a href="Toolbar.js.html#line364">line 364</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Toolgroup factory</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">OO.Factory</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="initialize"><span class="type-signature"></span>initialize<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Sets up handles and preloads required information for the toolbar to work.
+This must be called after it is attached to a visible document and before doing anything else.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Toolbar.js.html">Toolbar.js</a>, <a href="Toolbar.js.html#line413">line 413</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="isElementAttached"><span class="type-signature"></span>isElementAttached<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Check if the element is attached to the DOM</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="OO.ui.Element.html#isElementAttached">OO.ui.Element#isElementAttached</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Element.js.html">Element.js</a>, <a href="Element.js.html#line902">line 902</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>The element is attached to the DOM</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="isToolAvailable"><span class="type-signature"></span>isToolAvailable<span class="signature">(name)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Check if the tool is available.</p>
+<p>Available tools are ones that have not yet been added to the toolbar.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>name</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Symbolic name of tool</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Toolbar.js.html">Toolbar.js</a>, <a href="Toolbar.js.html#line498">line 498</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Tool is available</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="isVisible"><span class="type-signature"></span>isVisible<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Check if element is visible.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="OO.ui.Element.html#isVisible">OO.ui.Element#isVisible</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Element.js.html">Element.js</a>, <a href="Element.js.html#line806">line 806</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>element is visible</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="releaseTool"><span class="type-signature"></span>releaseTool<span class="signature">(tool)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Allow tool to be used again.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>tool</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="OO.ui.Tool.html">OO.ui.Tool</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Tool to release</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Toolbar.js.html">Toolbar.js</a>, <a href="Toolbar.js.html#line516">line 516</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="reserveTool"><span class="type-signature"></span>reserveTool<span class="signature">(tool)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Prevent tool from being used again.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>tool</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="OO.ui.Tool.html">OO.ui.Tool</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Tool to reserve</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Toolbar.js.html">Toolbar.js</a>, <a href="Toolbar.js.html#line507">line 507</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="reset"><span class="type-signature"></span>reset<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Remove all tools and toolgroups from the toolbar.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Toolbar.js.html">Toolbar.js</a>, <a href="Toolbar.js.html#line467">line 467</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="restorePreInfuseState"><span class="type-signature">(protected) </span>restorePreInfuseState<span class="signature">(state)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Restore the pre-infusion dynamic state for this widget.</p>
+<p>This method is called after #$element has been inserted into DOM. The parameter is the return
+value of #gatherPreInfuseState.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>state</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="OO.ui.Element.html#restorePreInfuseState">OO.ui.Element#restorePreInfuseState</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Element.js.html">Element.js</a>, <a href="Element.js.html#line980">line 980</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="scrollElementIntoView"><span class="type-signature"></span>scrollElementIntoView<span class="signature">(config<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {jQuery.Promise}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Scroll element into view.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>config</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Configuration options</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="OO.ui.Element.html#scrollElementIntoView">OO.ui.Element#scrollElementIntoView</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Element.js.html">Element.js</a>, <a href="Element.js.html#line960">line 960</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>Promise which resolves when the scroll is complete</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">jQuery.Promise</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="setData"><span class="type-signature"></span>setData<span class="signature">(data)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Set element data.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>data</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Mixed</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Element data</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="OO.ui.Element.html#setData">OO.ui.Element#setData</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Element.js.html">Element.js</a>, <a href="Element.js.html#line825">line 825</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="setElementGroup"><span class="type-signature"></span>setElementGroup<span class="signature">(group)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Set group element is in.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>group</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="OO.ui.mixin.GroupElement.html">OO.ui.mixin.GroupElement</a></span>
+|
+
+<span class="param-type">null</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Group element, null if none</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="OO.ui.Element.html#setElementGroup">OO.ui.Element#setElementGroup</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Element.js.html">Element.js</a>, <a href="Element.js.html#line949">line 949</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="setElementId"><span class="type-signature"></span>setElementId<span class="signature">(id)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Set the element has an 'id' attribute.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>id</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="OO.ui.Element.html#setElementId">OO.ui.Element#setElementId</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Element.js.html">Element.js</a>, <a href="Element.js.html#line836">line 836</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="setup"><span class="type-signature"></span>setup<span class="signature">(groups)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Set up the toolbar.</p>
+<p>The toolbar is set up with a list of toolgroup configurations that specify the type of
+toolgroup (<a href="OO.ui.BarToolGroup.html">bar</a>, <a href="OO.ui.MenuToolGroup.html">menu</a>, or <a href="OO.ui.ListToolGroup.html">list</a>)
+to add and which tools to include, exclude, promote, or demote within that toolgroup. Please
+see <a href="OO.ui.ToolGroup.html">toolgroups</a> for more information about including tools in toolgroups.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>groups</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object.&lt;string, Array></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>List of toolgroup configurations</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>include</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array</span>
+|
+
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Tools to include in the toolgroup</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>exclude</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array</span>
+|
+
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Tools to exclude from the toolgroup</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>promote</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array</span>
+|
+
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Tools to promote to the beginning of the toolgroup</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>demote</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array</span>
+|
+
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Tools to demote to the end of the toolgroup</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Toolbar.js.html">Toolbar.js</a>, <a href="Toolbar.js.html#line435">line 435</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="supports"><span class="type-signature"></span>supports<span class="signature">(methods)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Check if element supports one or more methods.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>methods</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+|
+
+<span class="param-type">Array.&lt;string></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Method or list of methods to check</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="OO.ui.Element.html#supports">OO.ui.Element#supports</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Element.js.html">Element.js</a>, <a href="Element.js.html#line861">line 861</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>All methods are supported</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="toggle"><span class="type-signature"></span>toggle<span class="signature">(show<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Toggle visibility of an element.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>show</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>Make element visible, omit to toggle visibility</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="OO.ui.Element.html#toggle">OO.ui.Element#toggle</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Element.js.html">Element.js</a>, <a href="Element.js.html#line789">line 789</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<h5>Fires:</h5>
+<ul>
+    <li>event:visible</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="updateThemeClasses"><span class="type-signature"></span>updateThemeClasses<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Update the theme-provided classes.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+    <dt class="inherited-from">Inherited From:</dt>
+    <dd class="inherited-from"><ul class="dummy"><li>
+        <a href="OO.ui.Element.html#updateThemeClasses">OO.ui.Element#updateThemeClasses</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Element.js.html">Element.js</a>, <a href="Element.js.html#line882">line 882</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="OO.ui.html">ui</a></li><li><a href="OO.ui.ActionFieldLayout.html">ActionFieldLayout</a></li><li><a href="OO.ui.ActionSet.html">ActionSet</a></li><li><a href="OO.ui.ActionWidget.html">ActionWidget</a></li><li><a href="OO.ui.ApexTheme.html">ApexTheme</a></li><li><a href="OO.ui.BarToolGroup.html">BarToolGroup</a></li><li><a href="OO.ui.BlankTheme.html">BlankTheme</a></li><li><a href="OO.ui.BookletLayout.html">BookletLayout</a></li><li><a href="OO.ui.ButtonGroupWidget.html">ButtonGroupWidget</a></li><li><a href="OO.ui.ButtonInputWidget.html">ButtonInputWidget</a></li><li><a href="OO.ui.ButtonOptionWidget.html">ButtonOptionWidget</a></li><li><a href="OO.ui.ButtonSelectWidget.html">ButtonSelectWidget</a></li><li><a href="OO.ui.ButtonWidget.html">ButtonWidget</a></li><li><a href="OO.ui.CapsuleItemWidget.html">CapsuleItemWidget</a></li><li><a href="OO.ui.CapsuleMultiselectWidget.html">CapsuleMultiselectWidget</a></li><li><a href="OO.ui.CheckboxInputWidget.html">CheckboxInputWidget</a></li><li><a href="OO.ui.CheckboxMultioptionWidget.html">CheckboxMultioptionWidget</a></li><li><a href="OO.ui.CheckboxMultiselectInputWidget.html">CheckboxMultiselectInputWidget</a></li><li><a href="OO.ui.CheckboxMultiselectWidget.html">CheckboxMultiselectWidget</a></li><li><a href="OO.ui.ComboBoxInputWidget.html">ComboBoxInputWidget</a></li><li><a href="OO.ui.DecoratedOptionWidget.html">DecoratedOptionWidget</a></li><li><a href="OO.ui.Dialog.html">Dialog</a></li><li><a href="OO.ui.DropdownInputWidget.html">DropdownInputWidget</a></li><li><a href="OO.ui.DropdownWidget.html">DropdownWidget</a></li><li><a href="OO.ui.Element.html">Element</a></li><li><a href="OO.ui.Error.html">Error</a></li><li><a href="OO.ui.FieldLayout.html">FieldLayout</a></li><li><a href="OO.ui.FieldsetLayout.html">FieldsetLayout</a></li><li><a href="OO.ui.FormLayout.html">FormLayout</a></li><li><a href="OO.ui.HiddenInputWidget.html">HiddenInputWidget</a></li><li><a href="OO.ui.HorizontalLayout.html">HorizontalLayout</a></li><li><a href="OO.ui.HtmlSnippet.html">HtmlSnippet</a></li><li><a href="OO.ui.IconWidget.html">IconWidget</a></li><li><a href="OO.ui.IndexLayout.html">IndexLayout</a></li><li><a href="OO.ui.IndicatorWidget.html">IndicatorWidget</a></li><li><a href="OO.ui.InputWidget.html">InputWidget</a></li><li><a href="OO.ui.LabelWidget.html">LabelWidget</a></li><li><a href="OO.ui.Layout.html">Layout</a></li><li><a href="OO.ui.ListToolGroup.html">ListToolGroup</a></li><li><a href="OO.ui.MenuLayout.html">MenuLayout</a></li><li><a href="OO.ui.MenuOptionWidget.html">MenuOptionWidget</a></li><li><a href="OO.ui.MenuSectionOptionWidget.html">MenuSectionOptionWidget</a></li><li><a href="OO.ui.MenuSelectWidget.html">MenuSelectWidget</a></li><li><a href="OO.ui.MenuTagMultiselectWidget.html">MenuTagMultiselectWidget</a></li><li><a href="OO.ui.MenuToolGroup.html">MenuToolGroup</a></li><li><a href="OO.ui.MessageDialog.html">MessageDialog</a></li><li><a href="OO.ui.mixin.html">mixin</a></li><li><a href="OO.ui.MultilineTextInputWidget.html">MultilineTextInputWidget</a></li><li><a href="OO.ui.MultioptionWidget.html">MultioptionWidget</a></li><li><a href="OO.ui.MultiselectWidget.html">MultiselectWidget</a></li><li><a href="OO.ui.NumberInputWidget.html">NumberInputWidget</a></li><li><a href="OO.ui.OptionWidget.html">OptionWidget</a></li><li><a href="OO.ui.OutlineControlsWidget.html">OutlineControlsWidget</a></li><li><a href="OO.ui.OutlineOptionWidget.html">OutlineOptionWidget</a></li><li><a href="OO.ui.OutlineSelectWidget.html">OutlineSelectWidget</a></li><li><a href="OO.ui.PageLayout.html">PageLayout</a></li><li><a href="OO.ui.PanelLayout.html">PanelLayout</a></li><li><a href="OO.ui.PopupButtonWidget.html">PopupButtonWidget</a></li><li><a href="OO.ui.PopupTagMultiselectWidget.html">PopupTagMultiselectWidget</a></li><li><a href="OO.ui.PopupTool.html">PopupTool</a></li><li><a href="OO.ui.PopupToolGroup.html">PopupToolGroup</a></li><li><a href="OO.ui.PopupWidget.html">PopupWidget</a></li><li><a href="OO.ui.Process.html">Process</a></li><li><a href="OO.ui.ProcessDialog.html">ProcessDialog</a></li><li><a href="OO.ui.ProgressBarWidget.html">ProgressBarWidget</a></li><li><a href="OO.ui.RadioInputWidget.html">RadioInputWidget</a></li><li><a href="OO.ui.RadioOptionWidget.html">RadioOptionWidget</a></li><li><a href="OO.ui.RadioSelectInputWidget.html">RadioSelectInputWidget</a></li><li><a href="OO.ui.RadioSelectWidget.html">RadioSelectWidget</a></li><li><a href="OO.ui.SearchInputWidget.html">SearchInputWidget</a></li><li><a href="OO.ui.SearchWidget.html">SearchWidget</a></li><li><a href="OO.ui.SelectFileWidget.html">SelectFileWidget</a></li><li><a href="OO.ui.SelectWidget.html">SelectWidget</a></li><li><a href="OO.ui.StackLayout.html">StackLayout</a></li><li><a href="OO.ui.TabOptionWidget.html">TabOptionWidget</a></li><li><a href="OO.ui.TabPanelLayout.html">TabPanelLayout</a></li><li><a href="OO.ui.TabSelectWidget.html">TabSelectWidget</a></li><li><a href="OO.ui.TagItemWidget.html">TagItemWidget</a></li><li><a href="OO.ui.TagMultiselectWidget.html">TagMultiselectWidget</a></li><li><a href="OO.ui.TextInputWidget.html">TextInputWidget</a></li><li><a href="OO.ui.Theme.html">Theme</a></li><li><a href="OO.ui.ToggleButtonWidget.html">ToggleButtonWidget</a></li><li><a href="OO.ui.ToggleSwitchWidget.html">ToggleSwitchWidget</a></li><li><a href="OO.ui.ToggleWidget.html">ToggleWidget</a></li><li><a href="OO.ui.Tool.html">Tool</a></li><li><a href="OO.ui.Toolbar.html">Toolbar</a></li><li><a href="OO.ui.ToolFactory.html">ToolFactory</a></li><li><a href="OO.ui.ToolGroup.html">ToolGroup</a></li><li><a href="OO.ui.ToolGroupFactory.html">ToolGroupFactory</a></li><li><a href="OO.ui.ToolGroupTool.html">ToolGroupTool</a></li><li><a href="OO.ui.Widget.html">Widget</a></li><li><a href="OO.ui.WikimediaUITheme.html">WikimediaUITheme</a></li><li><a href="OO.ui.Window.html">Window</a></li><li><a href="OO.ui.WindowInstance.html">WindowInstance</a></li><li><a href="OO.ui.WindowManager.html">WindowManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:changeAchangeeventisemittedwhentheon/offstateofthetogglechanges.">change
+
+A change event is emitted when the on/off state of the toggle changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhentheselectedstateoftheoptionchanges.">change
+
+A change event is emitted when the selected state of the option changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofitemschanges,oranitemisselectedordeselected.">change
+
+A change event is emitted when the set of items changes, or an item is selected or deselected.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofselecteditemschanges.">change
+
+A change event is emitted when the set of selected items changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthevalueoftheinputchanges.">change
+
+A change event is emitted when the value of the input changes.</a></li><li><a href="global.html#event:dragendAdragendeventisemittedwhentheuserdragsanitemandreleasesthemouse,thusterminatingthedragoperation.">dragend
+A dragend event is emitted when the user drags an item and releases the mouse,
+thus terminating the drag operation.</a></li><li><a href="global.html#event:dragstartAdragstarteventisemittedwhentheuserclicksandbeginsdragginganitem.">dragstart
+
+A dragstart event is emitted when the user clicks and begins dragging an item.</a></li><li><a href="global.html#event:dropAdropeventisemittedwhentheuserdragsanitemandthenreleasesthemousebuttonoveravalidtarget.">drop
+A drop event is emitted when the user drags an item and then releases the mouse button
+over a valid target.</a></li><li><a href="global.html#event:active">active</a></li><li><a href="global.html#event:add">add</a></li><li><a href="global.html#event:change">change</a></li><li><a href="global.html#event:click">click</a></li><li><a href="global.html#event:closing">closing</a></li><li><a href="global.html#event:disable">disable</a></li><li><a href="global.html#event:drag">drag</a></li><li><a href="global.html#event:draggable">draggable</a></li><li><a href="global.html#event:enter">enter</a></li><li><a href="global.html#event:labelChange">labelChange</a></li><li><a href="global.html#event:move">move</a></li><li><a href="global.html#event:navigate">navigate</a></li><li><a href="global.html#event:opening">opening</a></li><li><a href="global.html#event:remove">remove</a></li><li><a href="global.html#event:reorder">reorder</a></li><li><a href="global.html#event:resize">resize</a></li><li><a href="global.html#event:set">set</a></li><li><a href="global.html#event:submit">submit</a></li><li><a href="global.html#event:toggle">toggle</a></li><li><a href="global.html#event:update">update</a></li><li><a href="global.html#event:valid">valid</a></li><li><a href="global.html#event:visibleItemChange">visibleItemChange</a></li><li><a href="global.html#event:flagAflageventisemittedwhenthe#clearFlagsor#setFlagsmethodsareused.The%2560changes%2560parametercontainsthenameofeachmodifiedflagandindicateswhetheritwasaddedorremoved.">flag
+A flag event is emitted when the #clearFlags or #setFlags methods are used. The `changes`
+parameter contains the name of each modified flag and indicates whether it was
+added or removed.</a></li><li><a href="OO.ui.ButtonElement.html#event:click">click</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.SelectWidget.html#event:add">add</a></li><li><a href="OO.ui.SelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.SelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.SelectWidget.html#event:press">press</a></li><li><a href="OO.ui.SelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.SelectWidget.html#event:select">select</a></li><li><a href="OO.ui.TabSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.TabSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.TabSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.TabSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.TabSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.TabSelectWidget.html#event:select">select</a></li><li><a href="global.html#event:readyThemenuisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The menu is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:readyThepopupisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The popup is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:removeAremoveactionwasperformedontheitem">remove
+
+A remove action was performed on the item</a></li><li><a href="global.html#event:resizeAresizeeventisemittedwhenthewidget'sdimensionschangetoaccomodatenewlyaddeditemsorcurrentuserinput.">resize
+
+A resize event is emitted when the widget's dimensions change to accomodate newly added items or
+current user input.</a></li><li><a href="global.html#event:selectAselecteventisemittedwhenanitemisselectedordeselected.">select
+
+A select event is emitted when an item is selected or deselected.</a></li><li><a href="global.html#event:selectThetagwidgetwasselected.Thiscanoccurwhenthewidgetiseitherclickedorenterwaspressedonit.">select
+
+The tag widget was selected. This can occur when the widget
+is either clicked or enter was pressed on it.</a></li><li><a href="global.html#event:updateStateAn'updateState'eventmustbeemittedontheToolbar(bycalling%2560toolbar.emit('updateState')%2560)everytimethestateoftheapplicationusingthetoolbarchanges,andanupdatetothestateoftoolsisrequired.">updateState
+
+An 'updateState' event must be emitted on the Toolbar (by calling `toolbar.emit( 'updateState' )`)
+every time the state of the application using the toolbar changes, and an update to the state of
+tools is required.</a></li></ul><h3>Mixins</h3><ul><li><a href="OO.ui.mixin.AccessKeyedElement.html">AccessKeyedElement</a></li><li><a href="OO.ui.mixin.ButtonElement.html">ButtonElement</a></li><li><a href="OO.ui.mixin.ClippableElement.html">ClippableElement</a></li><li><a href="OO.ui.mixin.DraggableElement.html">DraggableElement</a></li><li><a href="OO.ui.mixin.DraggableGroupElement.html">DraggableGroupElement</a></li><li><a href="OO.ui.mixin.FlaggedElement.html">FlaggedElement</a></li><li><a href="OO.ui.mixin.FloatableElement.html">FloatableElement</a></li><li><a href="OO.ui.mixin.GroupElement.html">GroupElement</a></li><li><a href="OO.ui.mixin.GroupWidget.html">GroupWidget</a></li><li><a href="OO.ui.mixin.IconElement.html">IconElement</a></li><li><a href="OO.ui.mixin.IndicatorElement.html">IndicatorElement</a></li><li><a href="OO.ui.mixin.LabelElement.html">LabelElement</a></li><li><a href="OO.ui.mixin.LookupElement.html">LookupElement</a></li><li><a href="OO.ui.mixin.PendingElement.html">PendingElement</a></li><li><a href="OO.ui.mixin.PopupElement.html">PopupElement</a></li><li><a href="OO.ui.mixin.RequestManager.html">RequestManager</a></li><li><a href="OO.ui.mixin.TabIndexedElement.html">TabIndexedElement</a></li><li><a href="OO.ui.mixin.TitledElement.html">TitledElement</a></li></ul><h3>Global</h3><ul><li><a href="global.html#isActive">isActive</a></li><li><a href="global.html#setActive">setActive</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Jan 11 2018 12:31:40 GMT+0530 (IST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

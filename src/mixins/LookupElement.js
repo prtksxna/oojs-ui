@@ -12,18 +12,17 @@
  *
  * [1]: https://tools.wmflabs.org/oojs-ui/oojs-ui/demos/index.html#widgets-apex-vector-ltr
  *
- * @class
+ * @mixin
  * @abstract
- * @mixins OO.ui.mixin.RequestManager
+ * @mixes OO.ui.mixin.RequestManager
  *
- * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {jQuery} [$overlay] Overlay for the lookup menu; defaults to relative positioning.
+ * @param {jQuery} [config.$overlay] Overlay for the lookup menu; defaults to relative positioning.
  *  See <https://www.mediawiki.org/wiki/OOjs_UI/Concepts#Overlays>.
- * @cfg {jQuery} [$container=this.$element] The container element. The lookup menu is rendered beneath the specified element.
- * @cfg {boolean} [allowSuggestionsWhenEmpty=false] Request and display a lookup menu when the text input is empty.
+ * @param {jQuery} [config.$container=this.$element] The container element. The lookup menu is rendered beneath the specified element.
+ * @param {boolean} [config.allowSuggestionsWhenEmpty=false] Request and display a lookup menu when the text input is empty.
  *  By default, the lookup menu is not generated and displayed until the user begins to type.
- * @cfg {boolean} [highlightFirst=true] Whether the first lookup result should be highlighted (so, that the user can
+ * @param {boolean} [config.highlightFirst=true] Whether the first lookup result should be highlighted (so, that the user can
  *  take it over into the input with simply pressing return) automatically or not.
  */
 OO.ui.mixin.LookupElement = function OoUiMixinLookupElement( config ) {

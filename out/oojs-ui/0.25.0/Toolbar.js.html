@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Toolbar.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Toolbar.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Toolbars are complex interface components that permit users to easily access a variety
+ * of {@link OO.ui.Tool tools} (e.g., formatting commands) and actions, which are additional commands that are
+ * part of the toolbar, but not configured as tools.
+ *
+ * Individual tools are customized and then registered with a {@link OO.ui.ToolFactory tool factory}, which creates
+ * the tools on demand. Each tool has a symbolic name (used when registering the tool), a title (e.g., ‘Insert
+ * image’), and an icon.
+ *
+ * Individual tools are organized in {@link OO.ui.ToolGroup toolgroups}, which can be {@link OO.ui.MenuToolGroup menus}
+ * of tools, {@link OO.ui.ListToolGroup lists} of tools, or a single {@link OO.ui.BarToolGroup bar} of tools.
+ * The arrangement and order of the toolgroups is customized when the toolbar is set up. Tools can be presented in
+ * any order, but each can only appear once in the toolbar.
+ *
+ * The toolbar can be synchronized with the state of the external "application", like a text
+ * editor's editing area, marking tools as active/inactive (e.g. a 'bold' tool would be shown as
+ * active when the text cursor was inside bolded text) or enabled/disabled (e.g. a table caption
+ * tool would be disabled while the user is not editing a table). A state change is signalled by
+ * emitting the {@link #event-updateState 'updateState' event}, which calls Tools'
+ * {@link OO.ui.Tool#onUpdateState onUpdateState method}.
+ *
+ * The following is an example of a basic toolbar.
+ *
+ *     @example
+ *     // Example of a toolbar
+ *     // Create the toolbar
+ *     var toolFactory = new OO.ui.ToolFactory();
+ *     var toolGroupFactory = new OO.ui.ToolGroupFactory();
+ *     var toolbar = new OO.ui.Toolbar( toolFactory, toolGroupFactory );
+ *
+ *     // We will be placing status text in this element when tools are used
+ *     var $area = $( '&lt;p>' ).text( 'Toolbar example' );
+ *
+ *     // Define the tools that we're going to place in our toolbar
+ *
+ *     // Create a class inheriting from OO.ui.Tool
+ *     function SearchTool() {
+ *         SearchTool.parent.apply( this, arguments );
+ *     }
+ *     OO.inheritClass( SearchTool, OO.ui.Tool );
+ *     // Each tool must have a 'name' (used as an internal identifier, see later) and at least one
+ *     // of 'icon' and 'title' (displayed icon and text).
+ *     SearchTool.static.name = 'search';
+ *     SearchTool.static.icon = 'search';
+ *     SearchTool.static.title = 'Search...';
+ *     // Defines the action that will happen when this tool is selected (clicked).
+ *     SearchTool.prototype.onSelect = function () {
+ *         $area.text( 'Search tool clicked!' );
+ *         // Never display this tool as "active" (selected).
+ *         this.setActive( false );
+ *     };
+ *     SearchTool.prototype.onUpdateState = function () {};
+ *     // Make this tool available in our toolFactory and thus our toolbar
+ *     toolFactory.register( SearchTool );
+ *
+ *     // Register two more tools, nothing interesting here
+ *     function SettingsTool() {
+ *         SettingsTool.parent.apply( this, arguments );
+ *     }
+ *     OO.inheritClass( SettingsTool, OO.ui.Tool );
+ *     SettingsTool.static.name = 'settings';
+ *     SettingsTool.static.icon = 'settings';
+ *     SettingsTool.static.title = 'Change settings';
+ *     SettingsTool.prototype.onSelect = function () {
+ *         $area.text( 'Settings tool clicked!' );
+ *         this.setActive( false );
+ *     };
+ *     SettingsTool.prototype.onUpdateState = function () {};
+ *     toolFactory.register( SettingsTool );
+ *
+ *     // Register two more tools, nothing interesting here
+ *     function StuffTool() {
+ *         StuffTool.parent.apply( this, arguments );
+ *     }
+ *     OO.inheritClass( StuffTool, OO.ui.Tool );
+ *     StuffTool.static.name = 'stuff';
+ *     StuffTool.static.icon = 'ellipsis';
+ *     StuffTool.static.title = 'More stuff';
+ *     StuffTool.prototype.onSelect = function () {
+ *         $area.text( 'More stuff tool clicked!' );
+ *         this.setActive( false );
+ *     };
+ *     StuffTool.prototype.onUpdateState = function () {};
+ *     toolFactory.register( StuffTool );
+ *
+ *     // This is a PopupTool. Rather than having a custom 'onSelect' action, it will display a
+ *     // little popup window (a PopupWidget).
+ *     function HelpTool( toolGroup, config ) {
+ *         OO.ui.PopupTool.call( this, toolGroup, $.extend( { popup: {
+ *             padded: true,
+ *             label: 'Help',
+ *             head: true
+ *         } }, config ) );
+ *         this.popup.$body.append( '&lt;p>I am helpful!&lt;/p>' );
+ *     }
+ *     OO.inheritClass( HelpTool, OO.ui.PopupTool );
+ *     HelpTool.static.name = 'help';
+ *     HelpTool.static.icon = 'help';
+ *     HelpTool.static.title = 'Help';
+ *     toolFactory.register( HelpTool );
+ *
+ *     // Finally define which tools and in what order appear in the toolbar. Each tool may only be
+ *     // used once (but not all defined tools must be used).
+ *     toolbar.setup( [
+ *         {
+ *             // 'bar' tool groups display tools' icons only, side-by-side.
+ *             type: 'bar',
+ *             include: [ 'search', 'help' ]
+ *         },
+ *         {
+ *             // 'list' tool groups display both the titles and icons, in a dropdown list.
+ *             type: 'list',
+ *             indicator: 'down',
+ *             label: 'More',
+ *             include: [ 'settings', 'stuff' ]
+ *         }
+ *         // Note how the tools themselves are toolgroup-agnostic - the same tool can be displayed
+ *         // either in a 'list' or a 'bar'. There is a 'menu' tool group too, not showcased here,
+ *         // since it's more complicated to use. (See the next example snippet on this page.)
+ *     ] );
+ *
+ *     // Create some UI around the toolbar and place it in the document
+ *     var frame = new OO.ui.PanelLayout( {
+ *         expanded: false,
+ *         framed: true
+ *     } );
+ *     var contentFrame = new OO.ui.PanelLayout( {
+ *         expanded: false,
+ *         padded: true
+ *     } );
+ *     frame.$element.append(
+ *         toolbar.$element,
+ *         contentFrame.$element.append( $area )
+ *     );
+ *     $( 'body' ).append( frame.$element );
+ *
+ *     // Here is where the toolbar is actually built. This must be done after inserting it into the
+ *     // document.
+ *     toolbar.initialize();
+ *     toolbar.emit( 'updateState' );
+ *
+ * The following example extends the previous one to illustrate 'menu' toolgroups and the usage of
+ * {@link #event-updateState 'updateState' event}.
+ *
+ *     @example
+ *     // Create the toolbar
+ *     var toolFactory = new OO.ui.ToolFactory();
+ *     var toolGroupFactory = new OO.ui.ToolGroupFactory();
+ *     var toolbar = new OO.ui.Toolbar( toolFactory, toolGroupFactory );
+ *
+ *     // We will be placing status text in this element when tools are used
+ *     var $area = $( '&lt;p>' ).text( 'Toolbar example' );
+ *
+ *     // Define the tools that we're going to place in our toolbar
+ *
+ *     // Create a class inheriting from OO.ui.Tool
+ *     function SearchTool() {
+ *         SearchTool.parent.apply( this, arguments );
+ *     }
+ *     OO.inheritClass( SearchTool, OO.ui.Tool );
+ *     // Each tool must have a 'name' (used as an internal identifier, see later) and at least one
+ *     // of 'icon' and 'title' (displayed icon and text).
+ *     SearchTool.static.name = 'search';
+ *     SearchTool.static.icon = 'search';
+ *     SearchTool.static.title = 'Search...';
+ *     // Defines the action that will happen when this tool is selected (clicked).
+ *     SearchTool.prototype.onSelect = function () {
+ *         $area.text( 'Search tool clicked!' );
+ *         // Never display this tool as "active" (selected).
+ *         this.setActive( false );
+ *     };
+ *     SearchTool.prototype.onUpdateState = function () {};
+ *     // Make this tool available in our toolFactory and thus our toolbar
+ *     toolFactory.register( SearchTool );
+ *
+ *     // Register two more tools, nothing interesting here
+ *     function SettingsTool() {
+ *         SettingsTool.parent.apply( this, arguments );
+ *         this.reallyActive = false;
+ *     }
+ *     OO.inheritClass( SettingsTool, OO.ui.Tool );
+ *     SettingsTool.static.name = 'settings';
+ *     SettingsTool.static.icon = 'settings';
+ *     SettingsTool.static.title = 'Change settings';
+ *     SettingsTool.prototype.onSelect = function () {
+ *         $area.text( 'Settings tool clicked!' );
+ *         // Toggle the active state on each click
+ *         this.reallyActive = !this.reallyActive;
+ *         this.setActive( this.reallyActive );
+ *         // To update the menu label
+ *         this.toolbar.emit( 'updateState' );
+ *     };
+ *     SettingsTool.prototype.onUpdateState = function () {};
+ *     toolFactory.register( SettingsTool );
+ *
+ *     // Register two more tools, nothing interesting here
+ *     function StuffTool() {
+ *         StuffTool.parent.apply( this, arguments );
+ *         this.reallyActive = false;
+ *     }
+ *     OO.inheritClass( StuffTool, OO.ui.Tool );
+ *     StuffTool.static.name = 'stuff';
+ *     StuffTool.static.icon = 'ellipsis';
+ *     StuffTool.static.title = 'More stuff';
+ *     StuffTool.prototype.onSelect = function () {
+ *         $area.text( 'More stuff tool clicked!' );
+ *         // Toggle the active state on each click
+ *         this.reallyActive = !this.reallyActive;
+ *         this.setActive( this.reallyActive );
+ *         // To update the menu label
+ *         this.toolbar.emit( 'updateState' );
+ *     };
+ *     StuffTool.prototype.onUpdateState = function () {};
+ *     toolFactory.register( StuffTool );
+ *
+ *     // This is a PopupTool. Rather than having a custom 'onSelect' action, it will display a
+ *     // little popup window (a PopupWidget). 'onUpdateState' is also already implemented.
+ *     function HelpTool( toolGroup, config ) {
+ *         OO.ui.PopupTool.call( this, toolGroup, $.extend( { popup: {
+ *             padded: true,
+ *             label: 'Help',
+ *             head: true
+ *         } }, config ) );
+ *         this.popup.$body.append( '&lt;p>I am helpful!&lt;/p>' );
+ *     }
+ *     OO.inheritClass( HelpTool, OO.ui.PopupTool );
+ *     HelpTool.static.name = 'help';
+ *     HelpTool.static.icon = 'help';
+ *     HelpTool.static.title = 'Help';
+ *     toolFactory.register( HelpTool );
+ *
+ *     // Finally define which tools and in what order appear in the toolbar. Each tool may only be
+ *     // used once (but not all defined tools must be used).
+ *     toolbar.setup( [
+ *         {
+ *             // 'bar' tool groups display tools' icons only, side-by-side.
+ *             type: 'bar',
+ *             include: [ 'search', 'help' ]
+ *         },
+ *         {
+ *             // 'menu' tool groups display both the titles and icons, in a dropdown menu.
+ *             // Menu label indicates which items are selected.
+ *             type: 'menu',
+ *             indicator: 'down',
+ *             include: [ 'settings', 'stuff' ]
+ *         }
+ *     ] );
+ *
+ *     // Create some UI around the toolbar and place it in the document
+ *     var frame = new OO.ui.PanelLayout( {
+ *         expanded: false,
+ *         framed: true
+ *     } );
+ *     var contentFrame = new OO.ui.PanelLayout( {
+ *         expanded: false,
+ *         padded: true
+ *     } );
+ *     frame.$element.append(
+ *         toolbar.$element,
+ *         contentFrame.$element.append( $area )
+ *     );
+ *     $( 'body' ).append( frame.$element );
+ *
+ *     // Here is where the toolbar is actually built. This must be done after inserting it into the
+ *     // document.
+ *     toolbar.initialize();
+ *     toolbar.emit( 'updateState' );
+ *
+ * @class
+ * @extends OO.ui.Element
+ * @mixes OO.EventEmitter
+ * @mixes OO.ui.mixin.GroupElement
+ *
+ * @constructor
+ * @param {OO.ui.ToolFactory} toolFactory Factory for creating tools
+ * @param {OO.ui.ToolGroupFactory} toolGroupFactory Factory for creating toolgroups
+ * @param {Object} [config] Configuration options
+ * @param {boolean} [config.actions] Add an actions section to the toolbar. Actions are commands that are included
+ *  in the toolbar, but are not configured as tools. By default, actions are displayed on the right side of
+ *  the toolbar.
+ * @param {string} [config.position='top'] Whether the toolbar is positioned above ('top') or below ('bottom') content.
+ */
+OO.ui.Toolbar = function OoUiToolbar( toolFactory, toolGroupFactory, config ) {
+	// Allow passing positional parameters inside the config object
+	if ( OO.isPlainObject( toolFactory ) &amp;&amp; config === undefined ) {
+		config = toolFactory;
+		toolFactory = config.toolFactory;
+		toolGroupFactory = config.toolGroupFactory;
+	}
+
+	// Configuration initialization
+	config = config || {};
+
+	// Parent constructor
+	OO.ui.Toolbar.parent.call( this, config );
+
+	// Mixin constructors
+	OO.EventEmitter.call( this );
+	OO.ui.mixin.GroupElement.call( this, config );
+
+	// Properties
+	this.toolFactory = toolFactory;
+	this.toolGroupFactory = toolGroupFactory;
+	this.groups = [];
+	this.tools = {};
+	this.position = config.position || 'top';
+	this.$bar = $( '&lt;div>' );
+	this.$actions = $( '&lt;div>' );
+	this.initialized = false;
+	this.narrowThreshold = null;
+	this.onWindowResizeHandler = this.onWindowResize.bind( this );
+
+	// Events
+	this.$element
+		.add( this.$bar ).add( this.$group ).add( this.$actions )
+		.on( 'mousedown keydown', this.onPointerDown.bind( this ) );
+
+	// Initialization
+	this.$group.addClass( 'oo-ui-toolbar-tools' );
+	if ( config.actions ) {
+		this.$bar.append( this.$actions.addClass( 'oo-ui-toolbar-actions' ) );
+	}
+	this.$bar
+		.addClass( 'oo-ui-toolbar-bar' )
+		.append( this.$group, '&lt;div style="clear:both">&lt;/div>' );
+	// Possible classes: oo-ui-toolbar-position-top, oo-ui-toolbar-position-bottom
+	this.$element.addClass( 'oo-ui-toolbar oo-ui-toolbar-position-' + this.position ).append( this.$bar );
+};
+
+/* Setup */
+
+OO.inheritClass( OO.ui.Toolbar, OO.ui.Element );
+OO.mixinClass( OO.ui.Toolbar, OO.EventEmitter );
+OO.mixinClass( OO.ui.Toolbar, OO.ui.mixin.GroupElement );
+
+/* Events */
+
+/**
+ * @event updateState
+ *
+ * An 'updateState' event must be emitted on the Toolbar (by calling `toolbar.emit( 'updateState' )`)
+ * every time the state of the application using the toolbar changes, and an update to the state of
+ * tools is required.
+ *
+ * @param {...Mixed} data Application-defined parameters
+ */
+
+/* Methods */
+
+/**
+ * Get the tool factory.
+ *
+ * @return {OO.ui.ToolFactory} Tool factory
+ */
+OO.ui.Toolbar.prototype.getToolFactory = function () {
+	return this.toolFactory;
+};
+
+/**
+ * Get the toolgroup factory.
+ *
+ * @return {OO.Factory} Toolgroup factory
+ */
+OO.ui.Toolbar.prototype.getToolGroupFactory = function () {
+	return this.toolGroupFactory;
+};
+
+/**
+ * Handles mouse down events.
+ *
+ * @private
+ * @param {jQuery.Event} e Mouse down event
+ */
+OO.ui.Toolbar.prototype.onPointerDown = function ( e ) {
+	var $closestWidgetToEvent = $( e.target ).closest( '.oo-ui-widget' ),
+		$closestWidgetToToolbar = this.$element.closest( '.oo-ui-widget' );
+	if ( !$closestWidgetToEvent.length || $closestWidgetToEvent[ 0 ] === $closestWidgetToToolbar[ 0 ] ) {
+		return false;
+	}
+};
+
+/**
+ * Handle window resize event.
+ *
+ * @private
+ * @param {jQuery.Event} e Window resize event
+ */
+OO.ui.Toolbar.prototype.onWindowResize = function () {
+	this.$element.toggleClass(
+		'oo-ui-toolbar-narrow',
+		this.$bar.width() &lt;= this.getNarrowThreshold()
+	);
+};
+
+/**
+ * Get the (lazily-computed) width threshold for applying the oo-ui-toolbar-narrow
+ * class.
+ *
+ * @private
+ * @return {number} Width threshold in pixels
+ */
+OO.ui.Toolbar.prototype.getNarrowThreshold = function () {
+	if ( this.narrowThreshold === null ) {
+		this.narrowThreshold = this.$group.width() + this.$actions.width();
+	}
+	return this.narrowThreshold;
+};
+
+/**
+ * Sets up handles and preloads required information for the toolbar to work.
+ * This must be called after it is attached to a visible document and before doing anything else.
+ */
+OO.ui.Toolbar.prototype.initialize = function () {
+	if ( !this.initialized ) {
+		this.initialized = true;
+		$( this.getElementWindow() ).on( 'resize', this.onWindowResizeHandler );
+		this.onWindowResize();
+	}
+};
+
+/**
+ * Set up the toolbar.
+ *
+ * The toolbar is set up with a list of toolgroup configurations that specify the type of
+ * toolgroup ({@link OO.ui.BarToolGroup bar}, {@link OO.ui.MenuToolGroup menu}, or {@link OO.ui.ListToolGroup list})
+ * to add and which tools to include, exclude, promote, or demote within that toolgroup. Please
+ * see {@link OO.ui.ToolGroup toolgroups} for more information about including tools in toolgroups.
+ *
+ * @param {Object.&lt;string,Array>} groups List of toolgroup configurations
+ * @param {Array|string} [groups.include] Tools to include in the toolgroup
+ * @param {Array|string} [groups.exclude] Tools to exclude from the toolgroup
+ * @param {Array|string} [groups.promote] Tools to promote to the beginning of the toolgroup
+ * @param {Array|string} [groups.demote] Tools to demote to the end of the toolgroup
+ */
+OO.ui.Toolbar.prototype.setup = function ( groups ) {
+	var i, len, type, group,
+		items = [],
+		defaultType = 'bar';
+
+	// Cleanup previous groups
+	this.reset();
+
+	// Build out new groups
+	for ( i = 0, len = groups.length; i &lt; len; i++ ) {
+		group = groups[ i ];
+		if ( group.include === '*' ) {
+			// Apply defaults to catch-all groups
+			if ( group.type === undefined ) {
+				group.type = 'list';
+			}
+			if ( group.label === undefined ) {
+				group.label = OO.ui.msg( 'ooui-toolbar-more' );
+			}
+		}
+		// Check type has been registered
+		type = this.getToolGroupFactory().lookup( group.type ) ? group.type : defaultType;
+		items.push(
+			this.getToolGroupFactory().create( type, this, group )
+		);
+	}
+	this.addItems( items );
+};
+
+/**
+ * Remove all tools and toolgroups from the toolbar.
+ */
+OO.ui.Toolbar.prototype.reset = function () {
+	var i, len;
+
+	this.groups = [];
+	this.tools = {};
+	for ( i = 0, len = this.items.length; i &lt; len; i++ ) {
+		this.items[ i ].destroy();
+	}
+	this.clearItems();
+};
+
+/**
+ * Destroy the toolbar.
+ *
+ * Destroying the toolbar removes all event handlers and DOM elements that constitute the toolbar. Call
+ * this method whenever you are done using a toolbar.
+ */
+OO.ui.Toolbar.prototype.destroy = function () {
+	$( this.getElementWindow() ).off( 'resize', this.onWindowResizeHandler );
+	this.reset();
+	this.$element.remove();
+};
+
+/**
+ * Check if the tool is available.
+ *
+ * Available tools are ones that have not yet been added to the toolbar.
+ *
+ * @param {string} name Symbolic name of tool
+ * @return {boolean} Tool is available
+ */
+OO.ui.Toolbar.prototype.isToolAvailable = function ( name ) {
+	return !this.tools[ name ];
+};
+
+/**
+ * Prevent tool from being used again.
+ *
+ * @param {OO.ui.Tool} tool Tool to reserve
+ */
+OO.ui.Toolbar.prototype.reserveTool = function ( tool ) {
+	this.tools[ tool.getName() ] = tool;
+};
+
+/**
+ * Allow tool to be used again.
+ *
+ * @param {OO.ui.Tool} tool Tool to release
+ */
+OO.ui.Toolbar.prototype.releaseTool = function ( tool ) {
+	delete this.tools[ tool.getName() ];
+};
+
+/**
+ * Get accelerator label for tool.
+ *
+ * The OOjs UI library does not contain an accelerator system, but this is the hook for one. To
+ * use an accelerator system, subclass the toolbar and override this method, which is meant to return a label
+ * that describes the accelerator keys for the tool passed (by symbolic name) to the method.
+ *
+ * @param {string} name Symbolic name of tool
+ * @return {string|undefined} Tool accelerator label if available
+ */
+OO.ui.Toolbar.prototype.getToolAccelerator = function () {
+	return undefined;
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="OO.ui.html">ui</a></li><li><a href="OO.ui.ActionFieldLayout.html">ActionFieldLayout</a></li><li><a href="OO.ui.ActionSet.html">ActionSet</a></li><li><a href="OO.ui.ActionWidget.html">ActionWidget</a></li><li><a href="OO.ui.ApexTheme.html">ApexTheme</a></li><li><a href="OO.ui.BarToolGroup.html">BarToolGroup</a></li><li><a href="OO.ui.BlankTheme.html">BlankTheme</a></li><li><a href="OO.ui.BookletLayout.html">BookletLayout</a></li><li><a href="OO.ui.ButtonGroupWidget.html">ButtonGroupWidget</a></li><li><a href="OO.ui.ButtonInputWidget.html">ButtonInputWidget</a></li><li><a href="OO.ui.ButtonOptionWidget.html">ButtonOptionWidget</a></li><li><a href="OO.ui.ButtonSelectWidget.html">ButtonSelectWidget</a></li><li><a href="OO.ui.ButtonWidget.html">ButtonWidget</a></li><li><a href="OO.ui.CapsuleItemWidget.html">CapsuleItemWidget</a></li><li><a href="OO.ui.CapsuleMultiselectWidget.html">CapsuleMultiselectWidget</a></li><li><a href="OO.ui.CheckboxInputWidget.html">CheckboxInputWidget</a></li><li><a href="OO.ui.CheckboxMultioptionWidget.html">CheckboxMultioptionWidget</a></li><li><a href="OO.ui.CheckboxMultiselectInputWidget.html">CheckboxMultiselectInputWidget</a></li><li><a href="OO.ui.CheckboxMultiselectWidget.html">CheckboxMultiselectWidget</a></li><li><a href="OO.ui.ComboBoxInputWidget.html">ComboBoxInputWidget</a></li><li><a href="OO.ui.DecoratedOptionWidget.html">DecoratedOptionWidget</a></li><li><a href="OO.ui.Dialog.html">Dialog</a></li><li><a href="OO.ui.DropdownInputWidget.html">DropdownInputWidget</a></li><li><a href="OO.ui.DropdownWidget.html">DropdownWidget</a></li><li><a href="OO.ui.Element.html">Element</a></li><li><a href="OO.ui.Error.html">Error</a></li><li><a href="OO.ui.FieldLayout.html">FieldLayout</a></li><li><a href="OO.ui.FieldsetLayout.html">FieldsetLayout</a></li><li><a href="OO.ui.FormLayout.html">FormLayout</a></li><li><a href="OO.ui.HiddenInputWidget.html">HiddenInputWidget</a></li><li><a href="OO.ui.HorizontalLayout.html">HorizontalLayout</a></li><li><a href="OO.ui.HtmlSnippet.html">HtmlSnippet</a></li><li><a href="OO.ui.IconWidget.html">IconWidget</a></li><li><a href="OO.ui.IndexLayout.html">IndexLayout</a></li><li><a href="OO.ui.IndicatorWidget.html">IndicatorWidget</a></li><li><a href="OO.ui.InputWidget.html">InputWidget</a></li><li><a href="OO.ui.LabelWidget.html">LabelWidget</a></li><li><a href="OO.ui.Layout.html">Layout</a></li><li><a href="OO.ui.ListToolGroup.html">ListToolGroup</a></li><li><a href="OO.ui.MenuLayout.html">MenuLayout</a></li><li><a href="OO.ui.MenuOptionWidget.html">MenuOptionWidget</a></li><li><a href="OO.ui.MenuSectionOptionWidget.html">MenuSectionOptionWidget</a></li><li><a href="OO.ui.MenuSelectWidget.html">MenuSelectWidget</a></li><li><a href="OO.ui.MenuTagMultiselectWidget.html">MenuTagMultiselectWidget</a></li><li><a href="OO.ui.MenuToolGroup.html">MenuToolGroup</a></li><li><a href="OO.ui.MessageDialog.html">MessageDialog</a></li><li><a href="OO.ui.mixin.html">mixin</a></li><li><a href="OO.ui.MultilineTextInputWidget.html">MultilineTextInputWidget</a></li><li><a href="OO.ui.MultioptionWidget.html">MultioptionWidget</a></li><li><a href="OO.ui.MultiselectWidget.html">MultiselectWidget</a></li><li><a href="OO.ui.NumberInputWidget.html">NumberInputWidget</a></li><li><a href="OO.ui.OptionWidget.html">OptionWidget</a></li><li><a href="OO.ui.OutlineControlsWidget.html">OutlineControlsWidget</a></li><li><a href="OO.ui.OutlineOptionWidget.html">OutlineOptionWidget</a></li><li><a href="OO.ui.OutlineSelectWidget.html">OutlineSelectWidget</a></li><li><a href="OO.ui.PageLayout.html">PageLayout</a></li><li><a href="OO.ui.PanelLayout.html">PanelLayout</a></li><li><a href="OO.ui.PopupButtonWidget.html">PopupButtonWidget</a></li><li><a href="OO.ui.PopupTagMultiselectWidget.html">PopupTagMultiselectWidget</a></li><li><a href="OO.ui.PopupTool.html">PopupTool</a></li><li><a href="OO.ui.PopupToolGroup.html">PopupToolGroup</a></li><li><a href="OO.ui.PopupWidget.html">PopupWidget</a></li><li><a href="OO.ui.Process.html">Process</a></li><li><a href="OO.ui.ProcessDialog.html">ProcessDialog</a></li><li><a href="OO.ui.ProgressBarWidget.html">ProgressBarWidget</a></li><li><a href="OO.ui.RadioInputWidget.html">RadioInputWidget</a></li><li><a href="OO.ui.RadioOptionWidget.html">RadioOptionWidget</a></li><li><a href="OO.ui.RadioSelectInputWidget.html">RadioSelectInputWidget</a></li><li><a href="OO.ui.RadioSelectWidget.html">RadioSelectWidget</a></li><li><a href="OO.ui.SearchInputWidget.html">SearchInputWidget</a></li><li><a href="OO.ui.SearchWidget.html">SearchWidget</a></li><li><a href="OO.ui.SelectFileWidget.html">SelectFileWidget</a></li><li><a href="OO.ui.SelectWidget.html">SelectWidget</a></li><li><a href="OO.ui.StackLayout.html">StackLayout</a></li><li><a href="OO.ui.TabOptionWidget.html">TabOptionWidget</a></li><li><a href="OO.ui.TabPanelLayout.html">TabPanelLayout</a></li><li><a href="OO.ui.TabSelectWidget.html">TabSelectWidget</a></li><li><a href="OO.ui.TagItemWidget.html">TagItemWidget</a></li><li><a href="OO.ui.TagMultiselectWidget.html">TagMultiselectWidget</a></li><li><a href="OO.ui.TextInputWidget.html">TextInputWidget</a></li><li><a href="OO.ui.Theme.html">Theme</a></li><li><a href="OO.ui.ToggleButtonWidget.html">ToggleButtonWidget</a></li><li><a href="OO.ui.ToggleSwitchWidget.html">ToggleSwitchWidget</a></li><li><a href="OO.ui.ToggleWidget.html">ToggleWidget</a></li><li><a href="OO.ui.Tool.html">Tool</a></li><li><a href="OO.ui.Toolbar.html">Toolbar</a></li><li><a href="OO.ui.ToolFactory.html">ToolFactory</a></li><li><a href="OO.ui.ToolGroup.html">ToolGroup</a></li><li><a href="OO.ui.ToolGroupFactory.html">ToolGroupFactory</a></li><li><a href="OO.ui.ToolGroupTool.html">ToolGroupTool</a></li><li><a href="OO.ui.Widget.html">Widget</a></li><li><a href="OO.ui.WikimediaUITheme.html">WikimediaUITheme</a></li><li><a href="OO.ui.Window.html">Window</a></li><li><a href="OO.ui.WindowInstance.html">WindowInstance</a></li><li><a href="OO.ui.WindowManager.html">WindowManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:changeAchangeeventisemittedwhentheon/offstateofthetogglechanges.">change
+
+A change event is emitted when the on/off state of the toggle changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhentheselectedstateoftheoptionchanges.">change
+
+A change event is emitted when the selected state of the option changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofitemschanges,oranitemisselectedordeselected.">change
+
+A change event is emitted when the set of items changes, or an item is selected or deselected.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofselecteditemschanges.">change
+
+A change event is emitted when the set of selected items changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthevalueoftheinputchanges.">change
+
+A change event is emitted when the value of the input changes.</a></li><li><a href="global.html#event:dragendAdragendeventisemittedwhentheuserdragsanitemandreleasesthemouse,thusterminatingthedragoperation.">dragend
+A dragend event is emitted when the user drags an item and releases the mouse,
+thus terminating the drag operation.</a></li><li><a href="global.html#event:dragstartAdragstarteventisemittedwhentheuserclicksandbeginsdragginganitem.">dragstart
+
+A dragstart event is emitted when the user clicks and begins dragging an item.</a></li><li><a href="global.html#event:dropAdropeventisemittedwhentheuserdragsanitemandthenreleasesthemousebuttonoveravalidtarget.">drop
+A drop event is emitted when the user drags an item and then releases the mouse button
+over a valid target.</a></li><li><a href="global.html#event:active">active</a></li><li><a href="global.html#event:add">add</a></li><li><a href="global.html#event:change">change</a></li><li><a href="global.html#event:click">click</a></li><li><a href="global.html#event:closing">closing</a></li><li><a href="global.html#event:disable">disable</a></li><li><a href="global.html#event:drag">drag</a></li><li><a href="global.html#event:draggable">draggable</a></li><li><a href="global.html#event:enter">enter</a></li><li><a href="global.html#event:labelChange">labelChange</a></li><li><a href="global.html#event:move">move</a></li><li><a href="global.html#event:navigate">navigate</a></li><li><a href="global.html#event:opening">opening</a></li><li><a href="global.html#event:remove">remove</a></li><li><a href="global.html#event:reorder">reorder</a></li><li><a href="global.html#event:resize">resize</a></li><li><a href="global.html#event:set">set</a></li><li><a href="global.html#event:submit">submit</a></li><li><a href="global.html#event:toggle">toggle</a></li><li><a href="global.html#event:update">update</a></li><li><a href="global.html#event:valid">valid</a></li><li><a href="global.html#event:visibleItemChange">visibleItemChange</a></li><li><a href="global.html#event:flagAflageventisemittedwhenthe#clearFlagsor#setFlagsmethodsareused.The%2560changes%2560parametercontainsthenameofeachmodifiedflagandindicateswhetheritwasaddedorremoved.">flag
+A flag event is emitted when the #clearFlags or #setFlags methods are used. The `changes`
+parameter contains the name of each modified flag and indicates whether it was
+added or removed.</a></li><li><a href="OO.ui.ButtonElement.html#event:click">click</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.SelectWidget.html#event:add">add</a></li><li><a href="OO.ui.SelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.SelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.SelectWidget.html#event:press">press</a></li><li><a href="OO.ui.SelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.SelectWidget.html#event:select">select</a></li><li><a href="OO.ui.TabSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.TabSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.TabSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.TabSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.TabSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.TabSelectWidget.html#event:select">select</a></li><li><a href="global.html#event:readyThemenuisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The menu is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:readyThepopupisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The popup is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:removeAremoveactionwasperformedontheitem">remove
+
+A remove action was performed on the item</a></li><li><a href="global.html#event:resizeAresizeeventisemittedwhenthewidget'sdimensionschangetoaccomodatenewlyaddeditemsorcurrentuserinput.">resize
+
+A resize event is emitted when the widget's dimensions change to accomodate newly added items or
+current user input.</a></li><li><a href="global.html#event:selectAselecteventisemittedwhenanitemisselectedordeselected.">select
+
+A select event is emitted when an item is selected or deselected.</a></li><li><a href="global.html#event:selectThetagwidgetwasselected.Thiscanoccurwhenthewidgetiseitherclickedorenterwaspressedonit.">select
+
+The tag widget was selected. This can occur when the widget
+is either clicked or enter was pressed on it.</a></li><li><a href="global.html#event:updateStateAn'updateState'eventmustbeemittedontheToolbar(bycalling%2560toolbar.emit('updateState')%2560)everytimethestateoftheapplicationusingthetoolbarchanges,andanupdatetothestateoftoolsisrequired.">updateState
+
+An 'updateState' event must be emitted on the Toolbar (by calling `toolbar.emit( 'updateState' )`)
+every time the state of the application using the toolbar changes, and an update to the state of
+tools is required.</a></li></ul><h3>Mixins</h3><ul><li><a href="OO.ui.mixin.AccessKeyedElement.html">AccessKeyedElement</a></li><li><a href="OO.ui.mixin.ButtonElement.html">ButtonElement</a></li><li><a href="OO.ui.mixin.ClippableElement.html">ClippableElement</a></li><li><a href="OO.ui.mixin.DraggableElement.html">DraggableElement</a></li><li><a href="OO.ui.mixin.DraggableGroupElement.html">DraggableGroupElement</a></li><li><a href="OO.ui.mixin.FlaggedElement.html">FlaggedElement</a></li><li><a href="OO.ui.mixin.FloatableElement.html">FloatableElement</a></li><li><a href="OO.ui.mixin.GroupElement.html">GroupElement</a></li><li><a href="OO.ui.mixin.GroupWidget.html">GroupWidget</a></li><li><a href="OO.ui.mixin.IconElement.html">IconElement</a></li><li><a href="OO.ui.mixin.IndicatorElement.html">IndicatorElement</a></li><li><a href="OO.ui.mixin.LabelElement.html">LabelElement</a></li><li><a href="OO.ui.mixin.LookupElement.html">LookupElement</a></li><li><a href="OO.ui.mixin.PendingElement.html">PendingElement</a></li><li><a href="OO.ui.mixin.PopupElement.html">PopupElement</a></li><li><a href="OO.ui.mixin.RequestManager.html">RequestManager</a></li><li><a href="OO.ui.mixin.TabIndexedElement.html">TabIndexedElement</a></li><li><a href="OO.ui.mixin.TitledElement.html">TitledElement</a></li></ul><h3>Global</h3><ul><li><a href="global.html#isActive">isActive</a></li><li><a href="global.html#setActive">setActive</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Jan 11 2018 12:31:37 GMT+0530 (IST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -20,7 +20,8 @@
     "quickdoc": "grunt quick-build && jsduck && grunt copy:jsduck",
     "publish-build": "grunt publish-build",
     "demos": "grunt publish-build && grunt demos",
-    "jenkins": "npm test && jsduck && npm run postdoc"
+    "jenkins": "npm test && jsduck && npm run postdoc",
+    "jsdoc": "jsdoc -c jsdoc.json"
   },
   "dependencies": {
     "jquery": "3.2.1",
@@ -28,6 +29,7 @@
     "wikimedia-ui-base": "0.10.0"
   },
   "devDependencies": {
+    "docdash": "^0.4.0",
     "eslint-config-wikimedia": "0.5.0",
     "grunt": "1.0.1",
     "grunt-banana-checker": "0.6.0",
@@ -50,17 +52,24 @@
     "grunt-stylelint": "0.9.0",
     "grunt-svg2png": "git://github.com/jdforrester/grunt-svg2png.git#v0.2.7-wmf.1",
     "grunt-tyops": "0.1.0",
+    "jaguarjs-jsdoc": "^1.1.0",
     "javascript-stringify": "1.6.0",
+    "jsdoc": "^3.5.5",
     "karma": "1.7.1",
     "karma-chrome-launcher": "2.2.0",
     "karma-coverage": "1.1.1",
     "karma-firefox-launcher": "1.0.1",
     "karma-qunit": "1.2.1",
     "karma-remap-istanbul": "0.6.0",
+    "maptalks-jsdoc": "^0.2.1",
+    "minami": "^1.2.3",
+    "namis": "^1.0.3",
     "prismjs": "1.8.3",
     "q": "1.5.1",
     "qunitjs": "2.4.1",
     "stylelint": "8.2.0",
-    "stylelint-config-wikimedia": "0.4.2"
+    "stylelint-config-wikimedia": "0.4.2",
+    "tsumekusajsdoc": "^1.0.5",
+    "tui-jsdoc-template": "^1.2.2"
   }
 }

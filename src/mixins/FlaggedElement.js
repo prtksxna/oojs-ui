@@ -29,15 +29,13 @@
  *
  * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Elements/Flagged
  *
- * @abstract
- * @class
+ * @mixin
  *
- * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {string|string[]} [flags] The name or names of the flags (e.g., 'progressive' or 'primary') to apply.
+ * @param {string|string[]} [config.flags] The name or names of the flags (e.g., 'progressive' or 'primary') to apply.
  *  Please see the [OOjs UI documentation on MediaWiki] [2] for more information about available flags.
  *  [2]: https://www.mediawiki.org/wiki/OOjs_UI/Elements/Flagged
- * @cfg {jQuery} [$flagged] The flagged element. By default,
+ * @param {jQuery} [config.$flagged] The flagged element. By default,
  *  the flagged functionality is applied to the element created by the class ($element).
  *  If a different element is specified, the flagged functionality will be applied to it instead.
  */

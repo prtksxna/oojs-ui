@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Dialog.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Dialog.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * The Dialog class serves as the base class for the other types of dialogs.
+ * Unless extended to include controls, the rendered dialog box is a simple window
+ * that users can close by hitting the ‘Esc’ key. Dialog windows are used with OO.ui.WindowManager,
+ * which opens, closes, and controls the presentation of the window. See the
+ * [OOjs UI documentation on MediaWiki] [1] for more information.
+ *
+ *     @example
+ *     // A simple dialog window.
+ *     function MyDialog( config ) {
+ *         MyDialog.parent.call( this, config );
+ *     }
+ *     OO.inheritClass( MyDialog, OO.ui.Dialog );
+ *     MyDialog.static.name = 'myDialog';
+ *     MyDialog.prototype.initialize = function () {
+ *         MyDialog.parent.prototype.initialize.call( this );
+ *         this.content = new OO.ui.PanelLayout( { padded: true, expanded: false } );
+ *         this.content.$element.append( '&lt;p>A simple dialog window. Press \'Esc\' to close.&lt;/p>' );
+ *         this.$body.append( this.content.$element );
+ *     };
+ *     MyDialog.prototype.getBodyHeight = function () {
+ *         return this.content.$element.outerHeight( true );
+ *     };
+ *     var myDialog = new MyDialog( {
+ *         size: 'medium'
+ *     } );
+ *     // Create and append a window manager, which opens and closes the window.
+ *     var windowManager = new OO.ui.WindowManager();
+ *     $( 'body' ).append( windowManager.$element );
+ *     windowManager.addWindows( [ myDialog ] );
+ *     // Open the window!
+ *     windowManager.openWindow( myDialog );
+ *
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Windows/Dialogs
+ *
+ * @abstract
+ * @class
+ * @extends OO.ui.Window
+ * @mixes OO.ui.mixin.PendingElement
+ *
+ * @constructor
+ * @param {Object} [config] Configuration options
+ */
+OO.ui.Dialog = function OoUiDialog( config ) {
+	// Parent constructor
+	OO.ui.Dialog.parent.call( this, config );
+
+	// Mixin constructors
+	OO.ui.mixin.PendingElement.call( this );
+
+	// Properties
+	this.actions = new OO.ui.ActionSet();
+	this.attachedActions = [];
+	this.currentAction = null;
+	this.onDialogKeyDownHandler = this.onDialogKeyDown.bind( this );
+
+	// Events
+	this.actions.connect( this, {
+		click: 'onActionClick',
+		change: 'onActionsChange'
+	} );
+
+	// Initialization
+	this.$element
+		.addClass( 'oo-ui-dialog' )
+		.attr( 'role', 'dialog' );
+};
+
+/* Setup */
+
+OO.inheritClass( OO.ui.Dialog, OO.ui.Window );
+OO.mixinClass( OO.ui.Dialog, OO.ui.mixin.PendingElement );
+
+/* Static Properties */
+
+/**
+ * Symbolic name of dialog.
+ *
+ * The dialog class must have a symbolic name in order to be registered with OO.Factory.
+ * Please see the [OOjs UI documentation on MediaWiki] [3] for more information.
+ *
+ * [3]: https://www.mediawiki.org/wiki/OOjs_UI/Windows/Window_managers
+ *
+ * @abstract
+ * @static
+ * @inheritable
+ * @property {string}
+ */
+OO.ui.Dialog.static.name = '';
+
+/**
+ * The dialog title.
+ *
+ * The title can be specified as a plaintext string, a {@link OO.ui.mixin.LabelElement Label} node, or a function
+ * that will produce a Label node or string. The title can also be specified with data passed to the
+ * constructor (see #getSetupProcess). In this case, the static value will be overridden.
+ *
+ * @abstract
+ * @static
+ * @inheritable
+ * @property {jQuery|string|Function}
+ */
+OO.ui.Dialog.static.title = '';
+
+/**
+ * An array of configured {@link OO.ui.ActionWidget action widgets}.
+ *
+ * Actions can also be specified with data passed to the constructor (see #getSetupProcess). In this case, the static
+ * value will be overridden.
+ *
+ * [2]: https://www.mediawiki.org/wiki/OOjs_UI/Windows/Process_Dialogs#Action_sets
+ *
+ * @static
+ * @inheritable
+ * @property {Object[]}
+ */
+OO.ui.Dialog.static.actions = [];
+
+/**
+ * Close the dialog when the 'Esc' key is pressed.
+ *
+ * @static
+ * @abstract
+ * @inheritable
+ * @property {boolean}
+ */
+OO.ui.Dialog.static.escapable = true;
+
+/* Methods */
+
+/**
+ * Handle frame document key down events.
+ *
+ * @private
+ * @param {jQuery.Event} e Key down event
+ */
+OO.ui.Dialog.prototype.onDialogKeyDown = function ( e ) {
+	var actions;
+	if ( e.which === OO.ui.Keys.ESCAPE &amp;&amp; this.constructor.static.escapable ) {
+		this.executeAction( '' );
+		e.preventDefault();
+		e.stopPropagation();
+	} else if ( e.which === OO.ui.Keys.ENTER &amp;&amp; ( e.ctrlKey || e.metaKey ) ) {
+		actions = this.actions.get( { flags: 'primary', visible: true, disabled: false } );
+		if ( actions.length > 0 ) {
+			this.executeAction( actions[ 0 ].getAction() );
+			e.preventDefault();
+			e.stopPropagation();
+		}
+	}
+};
+
+/**
+ * Handle action click events.
+ *
+ * @private
+ * @param {OO.ui.ActionWidget} action Action that was clicked
+ */
+OO.ui.Dialog.prototype.onActionClick = function ( action ) {
+	if ( !this.isPending() ) {
+		this.executeAction( action.getAction() );
+	}
+};
+
+/**
+ * Handle actions change event.
+ *
+ * @private
+ */
+OO.ui.Dialog.prototype.onActionsChange = function () {
+	this.detachActions();
+	if ( !this.isClosing() ) {
+		this.attachActions();
+	}
+};
+
+/**
+ * Get the set of actions used by the dialog.
+ *
+ * @return {OO.ui.ActionSet}
+ */
+OO.ui.Dialog.prototype.getActions = function () {
+	return this.actions;
+};
+
+/**
+ * Get a process for taking action.
+ *
+ * When you override this method, you can create a new OO.ui.Process and return it, or add additional
+ * accept steps to the process the parent method provides using the {@link OO.ui.Process#first 'first'}
+ * and {@link OO.ui.Process#next 'next'} methods of OO.ui.Process.
+ *
+ * @param {string} [action] Symbolic name of action
+ * @return {OO.ui.Process} Action process
+ */
+OO.ui.Dialog.prototype.getActionProcess = function ( action ) {
+	return new OO.ui.Process()
+		.next( function () {
+			if ( !action ) {
+				// An empty action always closes the dialog without data, which should always be
+				// safe and make no changes
+				this.close();
+			}
+		}, this );
+};
+
+/**
+ * @inheritdoc
+ *
+ * @param {Object} [data] Dialog opening data
+ * @param {jQuery|string|Function|null} [data.title] Dialog title, omit to use
+ *  the {@link #static-title static title}
+ * @param {Object[]} [data.actions] List of configuration options for each
+ *   {@link OO.ui.ActionWidget action widget}, omit to use {@link #static-actions static actions}.
+ */
+OO.ui.Dialog.prototype.getSetupProcess = function ( data ) {
+	data = data || {};
+
+	// Parent method
+	return OO.ui.Dialog.parent.prototype.getSetupProcess.call( this, data )
+		.next( function () {
+			var config = this.constructor.static,
+				actions = data.actions !== undefined ? data.actions : config.actions,
+				title = data.title !== undefined ? data.title : config.title;
+
+			this.title.setLabel( title ).setTitle( title );
+			this.actions.add( this.getActionWidgets( actions ) );
+
+			this.$element.on( 'keydown', this.onDialogKeyDownHandler );
+		}, this );
+};
+
+/**
+ * @inheritdoc
+ */
+OO.ui.Dialog.prototype.getTeardownProcess = function ( data ) {
+	// Parent method
+	return OO.ui.Dialog.parent.prototype.getTeardownProcess.call( this, data )
+		.first( function () {
+			this.$element.off( 'keydown', this.onDialogKeyDownHandler );
+
+			this.actions.clear();
+			this.currentAction = null;
+		}, this );
+};
+
+/**
+ * @inheritdoc
+ */
+OO.ui.Dialog.prototype.initialize = function () {
+	// Parent method
+	OO.ui.Dialog.parent.prototype.initialize.call( this );
+
+	// Properties
+	this.title = new OO.ui.LabelWidget();
+
+	// Initialization
+	this.$content.addClass( 'oo-ui-dialog-content' );
+	this.$element.attr( 'aria-labelledby', this.title.getElementId() );
+	this.setPendingElement( this.$head );
+};
+
+/**
+ * Get action widgets from a list of configs
+ *
+ * @param {Object[]} actions Action widget configs
+ * @return {OO.ui.ActionWidget[]} Action widgets
+ */
+OO.ui.Dialog.prototype.getActionWidgets = function ( actions ) {
+	var i, len, widgets = [];
+	for ( i = 0, len = actions.length; i &lt; len; i++ ) {
+		widgets.push(
+			new OO.ui.ActionWidget( actions[ i ] )
+		);
+	}
+	return widgets;
+};
+
+/**
+ * Attach action actions.
+ *
+ * @protected
+ */
+OO.ui.Dialog.prototype.attachActions = function () {
+	// Remember the list of potentially attached actions
+	this.attachedActions = this.actions.get();
+};
+
+/**
+ * Detach action actions.
+ *
+ * @protected
+ * @chainable
+ */
+OO.ui.Dialog.prototype.detachActions = function () {
+	var i, len;
+
+	// Detach all actions that may have been previously attached
+	for ( i = 0, len = this.attachedActions.length; i &lt; len; i++ ) {
+		this.attachedActions[ i ].$element.detach();
+	}
+	this.attachedActions = [];
+};
+
+/**
+ * Execute an action.
+ *
+ * @param {string} action Symbolic name of action to execute
+ * @return {jQuery.Promise} Promise resolved when action completes, rejected if it fails
+ */
+OO.ui.Dialog.prototype.executeAction = function ( action ) {
+	this.pushPending();
+	this.currentAction = action;
+	return this.getActionProcess( action ).execute()
+		.always( this.popPending.bind( this ) );
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="OO.ui.html">ui</a></li><li><a href="OO.ui.ActionFieldLayout.html">ActionFieldLayout</a></li><li><a href="OO.ui.ActionSet.html">ActionSet</a></li><li><a href="OO.ui.ActionWidget.html">ActionWidget</a></li><li><a href="OO.ui.ApexTheme.html">ApexTheme</a></li><li><a href="OO.ui.BarToolGroup.html">BarToolGroup</a></li><li><a href="OO.ui.BlankTheme.html">BlankTheme</a></li><li><a href="OO.ui.BookletLayout.html">BookletLayout</a></li><li><a href="OO.ui.ButtonGroupWidget.html">ButtonGroupWidget</a></li><li><a href="OO.ui.ButtonInputWidget.html">ButtonInputWidget</a></li><li><a href="OO.ui.ButtonOptionWidget.html">ButtonOptionWidget</a></li><li><a href="OO.ui.ButtonSelectWidget.html">ButtonSelectWidget</a></li><li><a href="OO.ui.ButtonWidget.html">ButtonWidget</a></li><li><a href="OO.ui.CapsuleItemWidget.html">CapsuleItemWidget</a></li><li><a href="OO.ui.CapsuleMultiselectWidget.html">CapsuleMultiselectWidget</a></li><li><a href="OO.ui.CheckboxInputWidget.html">CheckboxInputWidget</a></li><li><a href="OO.ui.CheckboxMultioptionWidget.html">CheckboxMultioptionWidget</a></li><li><a href="OO.ui.CheckboxMultiselectInputWidget.html">CheckboxMultiselectInputWidget</a></li><li><a href="OO.ui.CheckboxMultiselectWidget.html">CheckboxMultiselectWidget</a></li><li><a href="OO.ui.ComboBoxInputWidget.html">ComboBoxInputWidget</a></li><li><a href="OO.ui.DecoratedOptionWidget.html">DecoratedOptionWidget</a></li><li><a href="OO.ui.Dialog.html">Dialog</a></li><li><a href="OO.ui.DropdownInputWidget.html">DropdownInputWidget</a></li><li><a href="OO.ui.DropdownWidget.html">DropdownWidget</a></li><li><a href="OO.ui.Element.html">Element</a></li><li><a href="OO.ui.Error.html">Error</a></li><li><a href="OO.ui.FieldLayout.html">FieldLayout</a></li><li><a href="OO.ui.FieldsetLayout.html">FieldsetLayout</a></li><li><a href="OO.ui.FormLayout.html">FormLayout</a></li><li><a href="OO.ui.HiddenInputWidget.html">HiddenInputWidget</a></li><li><a href="OO.ui.HorizontalLayout.html">HorizontalLayout</a></li><li><a href="OO.ui.HtmlSnippet.html">HtmlSnippet</a></li><li><a href="OO.ui.IconWidget.html">IconWidget</a></li><li><a href="OO.ui.IndexLayout.html">IndexLayout</a></li><li><a href="OO.ui.IndicatorWidget.html">IndicatorWidget</a></li><li><a href="OO.ui.InputWidget.html">InputWidget</a></li><li><a href="OO.ui.LabelWidget.html">LabelWidget</a></li><li><a href="OO.ui.Layout.html">Layout</a></li><li><a href="OO.ui.ListToolGroup.html">ListToolGroup</a></li><li><a href="OO.ui.MenuLayout.html">MenuLayout</a></li><li><a href="OO.ui.MenuOptionWidget.html">MenuOptionWidget</a></li><li><a href="OO.ui.MenuSectionOptionWidget.html">MenuSectionOptionWidget</a></li><li><a href="OO.ui.MenuSelectWidget.html">MenuSelectWidget</a></li><li><a href="OO.ui.MenuTagMultiselectWidget.html">MenuTagMultiselectWidget</a></li><li><a href="OO.ui.MenuToolGroup.html">MenuToolGroup</a></li><li><a href="OO.ui.MessageDialog.html">MessageDialog</a></li><li><a href="OO.ui.mixin.html">mixin</a></li><li><a href="OO.ui.MultilineTextInputWidget.html">MultilineTextInputWidget</a></li><li><a href="OO.ui.MultioptionWidget.html">MultioptionWidget</a></li><li><a href="OO.ui.MultiselectWidget.html">MultiselectWidget</a></li><li><a href="OO.ui.NumberInputWidget.html">NumberInputWidget</a></li><li><a href="OO.ui.OptionWidget.html">OptionWidget</a></li><li><a href="OO.ui.OutlineControlsWidget.html">OutlineControlsWidget</a></li><li><a href="OO.ui.OutlineOptionWidget.html">OutlineOptionWidget</a></li><li><a href="OO.ui.OutlineSelectWidget.html">OutlineSelectWidget</a></li><li><a href="OO.ui.PageLayout.html">PageLayout</a></li><li><a href="OO.ui.PanelLayout.html">PanelLayout</a></li><li><a href="OO.ui.PopupButtonWidget.html">PopupButtonWidget</a></li><li><a href="OO.ui.PopupTagMultiselectWidget.html">PopupTagMultiselectWidget</a></li><li><a href="OO.ui.PopupTool.html">PopupTool</a></li><li><a href="OO.ui.PopupToolGroup.html">PopupToolGroup</a></li><li><a href="OO.ui.PopupWidget.html">PopupWidget</a></li><li><a href="OO.ui.Process.html">Process</a></li><li><a href="OO.ui.ProcessDialog.html">ProcessDialog</a></li><li><a href="OO.ui.ProgressBarWidget.html">ProgressBarWidget</a></li><li><a href="OO.ui.RadioInputWidget.html">RadioInputWidget</a></li><li><a href="OO.ui.RadioOptionWidget.html">RadioOptionWidget</a></li><li><a href="OO.ui.RadioSelectInputWidget.html">RadioSelectInputWidget</a></li><li><a href="OO.ui.RadioSelectWidget.html">RadioSelectWidget</a></li><li><a href="OO.ui.SearchInputWidget.html">SearchInputWidget</a></li><li><a href="OO.ui.SearchWidget.html">SearchWidget</a></li><li><a href="OO.ui.SelectFileWidget.html">SelectFileWidget</a></li><li><a href="OO.ui.SelectWidget.html">SelectWidget</a></li><li><a href="OO.ui.StackLayout.html">StackLayout</a></li><li><a href="OO.ui.TabOptionWidget.html">TabOptionWidget</a></li><li><a href="OO.ui.TabPanelLayout.html">TabPanelLayout</a></li><li><a href="OO.ui.TabSelectWidget.html">TabSelectWidget</a></li><li><a href="OO.ui.TagItemWidget.html">TagItemWidget</a></li><li><a href="OO.ui.TagMultiselectWidget.html">TagMultiselectWidget</a></li><li><a href="OO.ui.TextInputWidget.html">TextInputWidget</a></li><li><a href="OO.ui.Theme.html">Theme</a></li><li><a href="OO.ui.ToggleButtonWidget.html">ToggleButtonWidget</a></li><li><a href="OO.ui.ToggleSwitchWidget.html">ToggleSwitchWidget</a></li><li><a href="OO.ui.ToggleWidget.html">ToggleWidget</a></li><li><a href="OO.ui.Tool.html">Tool</a></li><li><a href="OO.ui.Toolbar.html">Toolbar</a></li><li><a href="OO.ui.ToolFactory.html">ToolFactory</a></li><li><a href="OO.ui.ToolGroup.html">ToolGroup</a></li><li><a href="OO.ui.ToolGroupFactory.html">ToolGroupFactory</a></li><li><a href="OO.ui.ToolGroupTool.html">ToolGroupTool</a></li><li><a href="OO.ui.Widget.html">Widget</a></li><li><a href="OO.ui.WikimediaUITheme.html">WikimediaUITheme</a></li><li><a href="OO.ui.Window.html">Window</a></li><li><a href="OO.ui.WindowInstance.html">WindowInstance</a></li><li><a href="OO.ui.WindowManager.html">WindowManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:changeAchangeeventisemittedwhentheon/offstateofthetogglechanges.">change
+
+A change event is emitted when the on/off state of the toggle changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhentheselectedstateoftheoptionchanges.">change
+
+A change event is emitted when the selected state of the option changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofitemschanges,oranitemisselectedordeselected.">change
+
+A change event is emitted when the set of items changes, or an item is selected or deselected.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofselecteditemschanges.">change
+
+A change event is emitted when the set of selected items changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthevalueoftheinputchanges.">change
+
+A change event is emitted when the value of the input changes.</a></li><li><a href="global.html#event:dragendAdragendeventisemittedwhentheuserdragsanitemandreleasesthemouse,thusterminatingthedragoperation.">dragend
+A dragend event is emitted when the user drags an item and releases the mouse,
+thus terminating the drag operation.</a></li><li><a href="global.html#event:dragstartAdragstarteventisemittedwhentheuserclicksandbeginsdragginganitem.">dragstart
+
+A dragstart event is emitted when the user clicks and begins dragging an item.</a></li><li><a href="global.html#event:dropAdropeventisemittedwhentheuserdragsanitemandthenreleasesthemousebuttonoveravalidtarget.">drop
+A drop event is emitted when the user drags an item and then releases the mouse button
+over a valid target.</a></li><li><a href="global.html#event:active">active</a></li><li><a href="global.html#event:add">add</a></li><li><a href="global.html#event:change">change</a></li><li><a href="global.html#event:click">click</a></li><li><a href="global.html#event:closing">closing</a></li><li><a href="global.html#event:disable">disable</a></li><li><a href="global.html#event:drag">drag</a></li><li><a href="global.html#event:draggable">draggable</a></li><li><a href="global.html#event:enter">enter</a></li><li><a href="global.html#event:labelChange">labelChange</a></li><li><a href="global.html#event:move">move</a></li><li><a href="global.html#event:navigate">navigate</a></li><li><a href="global.html#event:opening">opening</a></li><li><a href="global.html#event:remove">remove</a></li><li><a href="global.html#event:reorder">reorder</a></li><li><a href="global.html#event:resize">resize</a></li><li><a href="global.html#event:set">set</a></li><li><a href="global.html#event:submit">submit</a></li><li><a href="global.html#event:toggle">toggle</a></li><li><a href="global.html#event:update">update</a></li><li><a href="global.html#event:valid">valid</a></li><li><a href="global.html#event:visibleItemChange">visibleItemChange</a></li><li><a href="global.html#event:flagAflageventisemittedwhenthe#clearFlagsor#setFlagsmethodsareused.The%2560changes%2560parametercontainsthenameofeachmodifiedflagandindicateswhetheritwasaddedorremoved.">flag
+A flag event is emitted when the #clearFlags or #setFlags methods are used. The `changes`
+parameter contains the name of each modified flag and indicates whether it was
+added or removed.</a></li><li><a href="OO.ui.ButtonElement.html#event:click">click</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.SelectWidget.html#event:add">add</a></li><li><a href="OO.ui.SelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.SelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.SelectWidget.html#event:press">press</a></li><li><a href="OO.ui.SelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.SelectWidget.html#event:select">select</a></li><li><a href="OO.ui.TabSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.TabSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.TabSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.TabSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.TabSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.TabSelectWidget.html#event:select">select</a></li><li><a href="global.html#event:readyThemenuisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The menu is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:readyThepopupisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The popup is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:removeAremoveactionwasperformedontheitem">remove
+
+A remove action was performed on the item</a></li><li><a href="global.html#event:resizeAresizeeventisemittedwhenthewidget'sdimensionschangetoaccomodatenewlyaddeditemsorcurrentuserinput.">resize
+
+A resize event is emitted when the widget's dimensions change to accomodate newly added items or
+current user input.</a></li><li><a href="global.html#event:selectAselecteventisemittedwhenanitemisselectedordeselected.">select
+
+A select event is emitted when an item is selected or deselected.</a></li><li><a href="global.html#event:selectThetagwidgetwasselected.Thiscanoccurwhenthewidgetiseitherclickedorenterwaspressedonit.">select
+
+The tag widget was selected. This can occur when the widget
+is either clicked or enter was pressed on it.</a></li><li><a href="global.html#event:updateStateAn'updateState'eventmustbeemittedontheToolbar(bycalling%2560toolbar.emit('updateState')%2560)everytimethestateoftheapplicationusingthetoolbarchanges,andanupdatetothestateoftoolsisrequired.">updateState
+
+An 'updateState' event must be emitted on the Toolbar (by calling `toolbar.emit( 'updateState' )`)
+every time the state of the application using the toolbar changes, and an update to the state of
+tools is required.</a></li></ul><h3>Mixins</h3><ul><li><a href="OO.ui.mixin.AccessKeyedElement.html">AccessKeyedElement</a></li><li><a href="OO.ui.mixin.ButtonElement.html">ButtonElement</a></li><li><a href="OO.ui.mixin.ClippableElement.html">ClippableElement</a></li><li><a href="OO.ui.mixin.DraggableElement.html">DraggableElement</a></li><li><a href="OO.ui.mixin.DraggableGroupElement.html">DraggableGroupElement</a></li><li><a href="OO.ui.mixin.FlaggedElement.html">FlaggedElement</a></li><li><a href="OO.ui.mixin.FloatableElement.html">FloatableElement</a></li><li><a href="OO.ui.mixin.GroupElement.html">GroupElement</a></li><li><a href="OO.ui.mixin.GroupWidget.html">GroupWidget</a></li><li><a href="OO.ui.mixin.IconElement.html">IconElement</a></li><li><a href="OO.ui.mixin.IndicatorElement.html">IndicatorElement</a></li><li><a href="OO.ui.mixin.LabelElement.html">LabelElement</a></li><li><a href="OO.ui.mixin.LookupElement.html">LookupElement</a></li><li><a href="OO.ui.mixin.PendingElement.html">PendingElement</a></li><li><a href="OO.ui.mixin.PopupElement.html">PopupElement</a></li><li><a href="OO.ui.mixin.RequestManager.html">RequestManager</a></li><li><a href="OO.ui.mixin.TabIndexedElement.html">TabIndexedElement</a></li><li><a href="OO.ui.mixin.TitledElement.html">TitledElement</a></li></ul><h3>Global</h3><ul><li><a href="global.html#isActive">isActive</a></li><li><a href="global.html#setActive">setActive</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Jan 11 2018 12:31:36 GMT+0530 (IST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

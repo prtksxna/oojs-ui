@@ -8,12 +8,12 @@
  *
  * @class
  * @extends OO.ui.Widget
- * @mixins OO.ui.mixin.ItemWidget
- * @mixins OO.ui.mixin.LabelElement
+ * @mixes OO.ui.mixin.ItemWidget
+ * @mixes OO.ui.mixin.LabelElement
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {boolean} [selected=false] Whether the option is initially selected
+ * @param {boolean} [config.selected=false] Whether the option is initially selected
  */
 OO.ui.MultioptionWidget = function OoUiMultioptionWidget( config ) {
 	// Configuration initialization

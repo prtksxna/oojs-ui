@@ -24,12 +24,12 @@
  *
  * @class
  * @extends OO.ui.PanelLayout
- * @mixins OO.ui.mixin.GroupElement
+ * @mixes OO.ui.mixin.GroupElement
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {boolean} [continuous=false] Show all panels, one after another. By default, only one panel is displayed at a time.
- * @cfg {OO.ui.Layout[]} [items] Panel layouts to add to the stack layout.
+ * @param {boolean} [config.continuous=false] Show all panels, one after another. By default, only one panel is displayed at a time.
+ * @param {OO.ui.Layout[]} [config.items] Panel layouts to add to the stack layout.
  */
 OO.ui.StackLayout = function OoUiStackLayout( config ) {
 	// Configuration initialization

@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: dialogs/ProcessDialog.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: dialogs/ProcessDialog.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * ProcessDialog windows encapsulate a {@link OO.ui.Process process} and all of the code necessary
+ * to complete it. If the process terminates with an error, a customizable {@link OO.ui.Error error
+ * interface} alerts users to the trouble, permitting the user to dismiss the error and try again when
+ * relevant. The ProcessDialog class is always extended and customized with the actions and content
+ * required for each process.
+ *
+ * The process dialog box consists of a header that visually represents the ‘working’ state of long
+ * processes with an animation. The header contains the dialog title as well as
+ * two {@link OO.ui.ActionWidget action widgets}:  a ‘safe’ action on the left (e.g., ‘Cancel’) and
+ * a ‘primary’ action on the right (e.g., ‘Done’).
+ *
+ * Like other windows, the process dialog is managed by a {@link OO.ui.WindowManager window manager}.
+ * Please see the [OOjs UI documentation on MediaWiki][1] for more information and examples.
+ *
+ *     @example
+ *     // Example: Creating and opening a process dialog window.
+ *     function MyProcessDialog( config ) {
+ *         MyProcessDialog.parent.call( this, config );
+ *     }
+ *     OO.inheritClass( MyProcessDialog, OO.ui.ProcessDialog );
+ *
+ *     MyProcessDialog.static.name = 'myProcessDialog';
+ *     MyProcessDialog.static.title = 'Process dialog';
+ *     MyProcessDialog.static.actions = [
+ *         { action: 'save', label: 'Done', flags: 'primary' },
+ *         { label: 'Cancel', flags: 'safe' }
+ *     ];
+ *
+ *     MyProcessDialog.prototype.initialize = function () {
+ *         MyProcessDialog.parent.prototype.initialize.apply( this, arguments );
+ *         this.content = new OO.ui.PanelLayout( { padded: true, expanded: false } );
+ *         this.content.$element.append( '&lt;p>This is a process dialog window. The header contains the title and two buttons: \'Cancel\' (a safe action) on the left and \'Done\' (a primary action)  on the right.&lt;/p>' );
+ *         this.$body.append( this.content.$element );
+ *     };
+ *     MyProcessDialog.prototype.getActionProcess = function ( action ) {
+ *         var dialog = this;
+ *         if ( action ) {
+ *             return new OO.ui.Process( function () {
+ *                 dialog.close( { action: action } );
+ *             } );
+ *         }
+ *         return MyProcessDialog.parent.prototype.getActionProcess.call( this, action );
+ *     };
+ *
+ *     var windowManager = new OO.ui.WindowManager();
+ *     $( 'body' ).append( windowManager.$element );
+ *
+ *     var dialog = new MyProcessDialog();
+ *     windowManager.addWindows( [ dialog ] );
+ *     windowManager.openWindow( dialog );
+ *
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Windows/Process_Dialogs
+ *
+ * @abstract
+ * @class
+ * @extends OO.ui.Dialog
+ *
+ * @constructor
+ * @param {Object} [config] Configuration options
+ */
+OO.ui.ProcessDialog = function OoUiProcessDialog( config ) {
+	// Parent constructor
+	OO.ui.ProcessDialog.parent.call( this, config );
+
+	// Properties
+	this.fitOnOpen = false;
+
+	// Initialization
+	this.$element.addClass( 'oo-ui-processDialog' );
+};
+
+/* Setup */
+
+OO.inheritClass( OO.ui.ProcessDialog, OO.ui.Dialog );
+
+/* Methods */
+
+/**
+ * Handle dismiss button click events.
+ *
+ * Hides errors.
+ *
+ * @private
+ */
+OO.ui.ProcessDialog.prototype.onDismissErrorButtonClick = function () {
+	this.hideErrors();
+};
+
+/**
+ * Handle retry button click events.
+ *
+ * Hides errors and then tries again.
+ *
+ * @private
+ */
+OO.ui.ProcessDialog.prototype.onRetryButtonClick = function () {
+	this.hideErrors();
+	this.executeAction( this.currentAction );
+};
+
+/**
+ * @inheritdoc
+ */
+OO.ui.ProcessDialog.prototype.initialize = function () {
+	// Parent method
+	OO.ui.ProcessDialog.parent.prototype.initialize.call( this );
+
+	// Properties
+	this.$navigation = $( '&lt;div>' );
+	this.$location = $( '&lt;div>' );
+	this.$safeActions = $( '&lt;div>' );
+	this.$primaryActions = $( '&lt;div>' );
+	this.$otherActions = $( '&lt;div>' );
+	this.dismissButton = new OO.ui.ButtonWidget( {
+		label: OO.ui.msg( 'ooui-dialog-process-dismiss' )
+	} );
+	this.retryButton = new OO.ui.ButtonWidget();
+	this.$errors = $( '&lt;div>' );
+	this.$errorsTitle = $( '&lt;div>' );
+
+	// Events
+	this.dismissButton.connect( this, { click: 'onDismissErrorButtonClick' } );
+	this.retryButton.connect( this, { click: 'onRetryButtonClick' } );
+
+	// Initialization
+	this.title.$element.addClass( 'oo-ui-processDialog-title' );
+	this.$location
+		.append( this.title.$element )
+		.addClass( 'oo-ui-processDialog-location' );
+	this.$safeActions.addClass( 'oo-ui-processDialog-actions-safe' );
+	this.$primaryActions.addClass( 'oo-ui-processDialog-actions-primary' );
+	this.$otherActions.addClass( 'oo-ui-processDialog-actions-other' );
+	this.$errorsTitle
+		.addClass( 'oo-ui-processDialog-errors-title' )
+		.text( OO.ui.msg( 'ooui-dialog-process-error' ) );
+	this.$errors
+		.addClass( 'oo-ui-processDialog-errors oo-ui-element-hidden' )
+		.append( this.$errorsTitle, this.dismissButton.$element, this.retryButton.$element );
+	this.$content
+		.addClass( 'oo-ui-processDialog-content' )
+		.append( this.$errors );
+	this.$navigation
+		.addClass( 'oo-ui-processDialog-navigation' )
+		// Note: Order of appends below is important. These are in the order
+		// we want tab to go through them. Display-order is handled entirely
+		// by CSS absolute-positioning. As such, primary actions like "done"
+		// should go first.
+		.append( this.$primaryActions, this.$location, this.$safeActions );
+	this.$head.append( this.$navigation );
+	this.$foot.append( this.$otherActions );
+};
+
+/**
+ * @inheritdoc
+ */
+OO.ui.ProcessDialog.prototype.getActionWidgets = function ( actions ) {
+	var i, len, config,
+		isMobile = OO.ui.isMobile(),
+		widgets = [];
+
+	for ( i = 0, len = actions.length; i &lt; len; i++ ) {
+		config = $.extend( { framed: !OO.ui.isMobile() }, actions[ i ] );
+		if ( isMobile &amp;&amp;
+			( config.flags === 'back' || ( Array.isArray( config.flags ) &amp;&amp; config.flags.indexOf( 'back' ) !== -1 ) )
+		) {
+			$.extend( config, {
+				icon: 'previous',
+				label: ''
+			} );
+		}
+		widgets.push(
+			new OO.ui.ActionWidget( config )
+		);
+	}
+	return widgets;
+};
+
+/**
+ * @inheritdoc
+ */
+OO.ui.ProcessDialog.prototype.attachActions = function () {
+	var i, len, other, special, others;
+
+	// Parent method
+	OO.ui.ProcessDialog.parent.prototype.attachActions.call( this );
+
+	special = this.actions.getSpecial();
+	others = this.actions.getOthers();
+	if ( special.primary ) {
+		this.$primaryActions.append( special.primary.$element );
+	}
+	for ( i = 0, len = others.length; i &lt; len; i++ ) {
+		other = others[ i ];
+		this.$otherActions.append( other.$element );
+	}
+	if ( special.safe ) {
+		this.$safeActions.append( special.safe.$element );
+	}
+
+	this.fitLabel();
+	this.$body.css( 'bottom', this.$foot.outerHeight( true ) );
+};
+
+/**
+ * @inheritdoc
+ */
+OO.ui.ProcessDialog.prototype.executeAction = function ( action ) {
+	var process = this;
+	return OO.ui.ProcessDialog.parent.prototype.executeAction.call( this, action )
+		.fail( function ( errors ) {
+			process.showErrors( errors || [] );
+		} );
+};
+
+/**
+ * @inheritdoc
+ */
+OO.ui.ProcessDialog.prototype.setDimensions = function () {
+	// Parent method
+	OO.ui.ProcessDialog.parent.prototype.setDimensions.apply( this, arguments );
+
+	this.fitLabel();
+};
+
+/**
+ * Fit label between actions.
+ *
+ * @private
+ * @chainable
+ */
+OO.ui.ProcessDialog.prototype.fitLabel = function () {
+	var safeWidth, primaryWidth, biggerWidth, labelWidth, navigationWidth, leftWidth, rightWidth,
+		size = this.getSizeProperties();
+
+	if ( typeof size.width !== 'number' ) {
+		if ( this.isOpened() ) {
+			navigationWidth = this.$head.width() - 20;
+		} else if ( this.isOpening() ) {
+			if ( !this.fitOnOpen ) {
+				// Size is relative and the dialog isn't open yet, so wait.
+				// FIXME: This should ideally be handled by setup somehow.
+				this.manager.lifecycle.opened.done( this.fitLabel.bind( this ) );
+				this.fitOnOpen = true;
+			}
+			return;
+		} else {
+			return;
+		}
+	} else {
+		navigationWidth = size.width - 20;
+	}
+
+	safeWidth = this.$safeActions.is( ':visible' ) ? this.$safeActions.width() : 0;
+	primaryWidth = this.$primaryActions.is( ':visible' ) ? this.$primaryActions.width() : 0;
+	biggerWidth = Math.max( safeWidth, primaryWidth );
+
+	labelWidth = this.title.$element.width();
+
+	if ( 2 * biggerWidth + labelWidth &lt; navigationWidth ) {
+		// We have enough space to center the label
+		leftWidth = rightWidth = biggerWidth;
+	} else {
+		// Let's hope we at least have enough space not to overlap, because we can't wrap the label…
+		if ( this.getDir() === 'ltr' ) {
+			leftWidth = safeWidth;
+			rightWidth = primaryWidth;
+		} else {
+			leftWidth = primaryWidth;
+			rightWidth = safeWidth;
+		}
+	}
+
+	this.$location.css( { paddingLeft: leftWidth, paddingRight: rightWidth } );
+
+	return this;
+};
+
+/**
+ * Handle errors that occurred during accept or reject processes.
+ *
+ * @private
+ * @param {OO.ui.Error[]|OO.ui.Error} errors Errors to be handled
+ */
+OO.ui.ProcessDialog.prototype.showErrors = function ( errors ) {
+	var i, len, $item, actions,
+		items = [],
+		abilities = {},
+		recoverable = true,
+		warning = false;
+
+	if ( errors instanceof OO.ui.Error ) {
+		errors = [ errors ];
+	}
+
+	for ( i = 0, len = errors.length; i &lt; len; i++ ) {
+		if ( !errors[ i ].isRecoverable() ) {
+			recoverable = false;
+		}
+		if ( errors[ i ].isWarning() ) {
+			warning = true;
+		}
+		$item = $( '&lt;div>' )
+			.addClass( 'oo-ui-processDialog-error' )
+			.append( errors[ i ].getMessage() );
+		items.push( $item[ 0 ] );
+	}
+	this.$errorItems = $( items );
+	if ( recoverable ) {
+		abilities[ this.currentAction ] = true;
+		// Copy the flags from the first matching action
+		actions = this.actions.get( { actions: this.currentAction } );
+		if ( actions.length ) {
+			this.retryButton.clearFlags().setFlags( actions[ 0 ].getFlags() );
+		}
+	} else {
+		abilities[ this.currentAction ] = false;
+		this.actions.setAbilities( abilities );
+	}
+	if ( warning ) {
+		this.retryButton.setLabel( OO.ui.msg( 'ooui-dialog-process-continue' ) );
+	} else {
+		this.retryButton.setLabel( OO.ui.msg( 'ooui-dialog-process-retry' ) );
+	}
+	this.retryButton.toggle( recoverable );
+	this.$errorsTitle.after( this.$errorItems );
+	this.$errors.removeClass( 'oo-ui-element-hidden' ).scrollTop( 0 );
+};
+
+/**
+ * Hide errors.
+ *
+ * @private
+ */
+OO.ui.ProcessDialog.prototype.hideErrors = function () {
+	this.$errors.addClass( 'oo-ui-element-hidden' );
+	if ( this.$errorItems ) {
+		this.$errorItems.remove();
+		this.$errorItems = null;
+	}
+};
+
+/**
+ * @inheritdoc
+ */
+OO.ui.ProcessDialog.prototype.getTeardownProcess = function ( data ) {
+	// Parent method
+	return OO.ui.ProcessDialog.parent.prototype.getTeardownProcess.call( this, data )
+		.first( function () {
+			// Make sure to hide errors
+			this.hideErrors();
+			this.fitOnOpen = false;
+		}, this );
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="OO.ui.html">ui</a></li><li><a href="OO.ui.ActionFieldLayout.html">ActionFieldLayout</a></li><li><a href="OO.ui.ActionSet.html">ActionSet</a></li><li><a href="OO.ui.ActionWidget.html">ActionWidget</a></li><li><a href="OO.ui.ApexTheme.html">ApexTheme</a></li><li><a href="OO.ui.BarToolGroup.html">BarToolGroup</a></li><li><a href="OO.ui.BlankTheme.html">BlankTheme</a></li><li><a href="OO.ui.BookletLayout.html">BookletLayout</a></li><li><a href="OO.ui.ButtonGroupWidget.html">ButtonGroupWidget</a></li><li><a href="OO.ui.ButtonInputWidget.html">ButtonInputWidget</a></li><li><a href="OO.ui.ButtonOptionWidget.html">ButtonOptionWidget</a></li><li><a href="OO.ui.ButtonSelectWidget.html">ButtonSelectWidget</a></li><li><a href="OO.ui.ButtonWidget.html">ButtonWidget</a></li><li><a href="OO.ui.CapsuleItemWidget.html">CapsuleItemWidget</a></li><li><a href="OO.ui.CapsuleMultiselectWidget.html">CapsuleMultiselectWidget</a></li><li><a href="OO.ui.CheckboxInputWidget.html">CheckboxInputWidget</a></li><li><a href="OO.ui.CheckboxMultioptionWidget.html">CheckboxMultioptionWidget</a></li><li><a href="OO.ui.CheckboxMultiselectInputWidget.html">CheckboxMultiselectInputWidget</a></li><li><a href="OO.ui.CheckboxMultiselectWidget.html">CheckboxMultiselectWidget</a></li><li><a href="OO.ui.ComboBoxInputWidget.html">ComboBoxInputWidget</a></li><li><a href="OO.ui.DecoratedOptionWidget.html">DecoratedOptionWidget</a></li><li><a href="OO.ui.Dialog.html">Dialog</a></li><li><a href="OO.ui.DropdownInputWidget.html">DropdownInputWidget</a></li><li><a href="OO.ui.DropdownWidget.html">DropdownWidget</a></li><li><a href="OO.ui.Element.html">Element</a></li><li><a href="OO.ui.Error.html">Error</a></li><li><a href="OO.ui.FieldLayout.html">FieldLayout</a></li><li><a href="OO.ui.FieldsetLayout.html">FieldsetLayout</a></li><li><a href="OO.ui.FormLayout.html">FormLayout</a></li><li><a href="OO.ui.HiddenInputWidget.html">HiddenInputWidget</a></li><li><a href="OO.ui.HorizontalLayout.html">HorizontalLayout</a></li><li><a href="OO.ui.HtmlSnippet.html">HtmlSnippet</a></li><li><a href="OO.ui.IconWidget.html">IconWidget</a></li><li><a href="OO.ui.IndexLayout.html">IndexLayout</a></li><li><a href="OO.ui.IndicatorWidget.html">IndicatorWidget</a></li><li><a href="OO.ui.InputWidget.html">InputWidget</a></li><li><a href="OO.ui.LabelWidget.html">LabelWidget</a></li><li><a href="OO.ui.Layout.html">Layout</a></li><li><a href="OO.ui.ListToolGroup.html">ListToolGroup</a></li><li><a href="OO.ui.MenuLayout.html">MenuLayout</a></li><li><a href="OO.ui.MenuOptionWidget.html">MenuOptionWidget</a></li><li><a href="OO.ui.MenuSectionOptionWidget.html">MenuSectionOptionWidget</a></li><li><a href="OO.ui.MenuSelectWidget.html">MenuSelectWidget</a></li><li><a href="OO.ui.MenuTagMultiselectWidget.html">MenuTagMultiselectWidget</a></li><li><a href="OO.ui.MenuToolGroup.html">MenuToolGroup</a></li><li><a href="OO.ui.MessageDialog.html">MessageDialog</a></li><li><a href="OO.ui.mixin.html">mixin</a></li><li><a href="OO.ui.MultilineTextInputWidget.html">MultilineTextInputWidget</a></li><li><a href="OO.ui.MultioptionWidget.html">MultioptionWidget</a></li><li><a href="OO.ui.MultiselectWidget.html">MultiselectWidget</a></li><li><a href="OO.ui.NumberInputWidget.html">NumberInputWidget</a></li><li><a href="OO.ui.OptionWidget.html">OptionWidget</a></li><li><a href="OO.ui.OutlineControlsWidget.html">OutlineControlsWidget</a></li><li><a href="OO.ui.OutlineOptionWidget.html">OutlineOptionWidget</a></li><li><a href="OO.ui.OutlineSelectWidget.html">OutlineSelectWidget</a></li><li><a href="OO.ui.PageLayout.html">PageLayout</a></li><li><a href="OO.ui.PanelLayout.html">PanelLayout</a></li><li><a href="OO.ui.PopupButtonWidget.html">PopupButtonWidget</a></li><li><a href="OO.ui.PopupTagMultiselectWidget.html">PopupTagMultiselectWidget</a></li><li><a href="OO.ui.PopupTool.html">PopupTool</a></li><li><a href="OO.ui.PopupToolGroup.html">PopupToolGroup</a></li><li><a href="OO.ui.PopupWidget.html">PopupWidget</a></li><li><a href="OO.ui.Process.html">Process</a></li><li><a href="OO.ui.ProcessDialog.html">ProcessDialog</a></li><li><a href="OO.ui.ProgressBarWidget.html">ProgressBarWidget</a></li><li><a href="OO.ui.RadioInputWidget.html">RadioInputWidget</a></li><li><a href="OO.ui.RadioOptionWidget.html">RadioOptionWidget</a></li><li><a href="OO.ui.RadioSelectInputWidget.html">RadioSelectInputWidget</a></li><li><a href="OO.ui.RadioSelectWidget.html">RadioSelectWidget</a></li><li><a href="OO.ui.SearchInputWidget.html">SearchInputWidget</a></li><li><a href="OO.ui.SearchWidget.html">SearchWidget</a></li><li><a href="OO.ui.SelectFileWidget.html">SelectFileWidget</a></li><li><a href="OO.ui.SelectWidget.html">SelectWidget</a></li><li><a href="OO.ui.StackLayout.html">StackLayout</a></li><li><a href="OO.ui.TabOptionWidget.html">TabOptionWidget</a></li><li><a href="OO.ui.TabPanelLayout.html">TabPanelLayout</a></li><li><a href="OO.ui.TabSelectWidget.html">TabSelectWidget</a></li><li><a href="OO.ui.TagItemWidget.html">TagItemWidget</a></li><li><a href="OO.ui.TagMultiselectWidget.html">TagMultiselectWidget</a></li><li><a href="OO.ui.TextInputWidget.html">TextInputWidget</a></li><li><a href="OO.ui.Theme.html">Theme</a></li><li><a href="OO.ui.ToggleButtonWidget.html">ToggleButtonWidget</a></li><li><a href="OO.ui.ToggleSwitchWidget.html">ToggleSwitchWidget</a></li><li><a href="OO.ui.ToggleWidget.html">ToggleWidget</a></li><li><a href="OO.ui.Tool.html">Tool</a></li><li><a href="OO.ui.Toolbar.html">Toolbar</a></li><li><a href="OO.ui.ToolFactory.html">ToolFactory</a></li><li><a href="OO.ui.ToolGroup.html">ToolGroup</a></li><li><a href="OO.ui.ToolGroupFactory.html">ToolGroupFactory</a></li><li><a href="OO.ui.ToolGroupTool.html">ToolGroupTool</a></li><li><a href="OO.ui.Widget.html">Widget</a></li><li><a href="OO.ui.WikimediaUITheme.html">WikimediaUITheme</a></li><li><a href="OO.ui.Window.html">Window</a></li><li><a href="OO.ui.WindowInstance.html">WindowInstance</a></li><li><a href="OO.ui.WindowManager.html">WindowManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:changeAchangeeventisemittedwhentheon/offstateofthetogglechanges.">change
+
+A change event is emitted when the on/off state of the toggle changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhentheselectedstateoftheoptionchanges.">change
+
+A change event is emitted when the selected state of the option changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofitemschanges,oranitemisselectedordeselected.">change
+
+A change event is emitted when the set of items changes, or an item is selected or deselected.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofselecteditemschanges.">change
+
+A change event is emitted when the set of selected items changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthevalueoftheinputchanges.">change
+
+A change event is emitted when the value of the input changes.</a></li><li><a href="global.html#event:dragendAdragendeventisemittedwhentheuserdragsanitemandreleasesthemouse,thusterminatingthedragoperation.">dragend
+A dragend event is emitted when the user drags an item and releases the mouse,
+thus terminating the drag operation.</a></li><li><a href="global.html#event:dragstartAdragstarteventisemittedwhentheuserclicksandbeginsdragginganitem.">dragstart
+
+A dragstart event is emitted when the user clicks and begins dragging an item.</a></li><li><a href="global.html#event:dropAdropeventisemittedwhentheuserdragsanitemandthenreleasesthemousebuttonoveravalidtarget.">drop
+A drop event is emitted when the user drags an item and then releases the mouse button
+over a valid target.</a></li><li><a href="global.html#event:active">active</a></li><li><a href="global.html#event:add">add</a></li><li><a href="global.html#event:change">change</a></li><li><a href="global.html#event:click">click</a></li><li><a href="global.html#event:closing">closing</a></li><li><a href="global.html#event:disable">disable</a></li><li><a href="global.html#event:drag">drag</a></li><li><a href="global.html#event:draggable">draggable</a></li><li><a href="global.html#event:enter">enter</a></li><li><a href="global.html#event:labelChange">labelChange</a></li><li><a href="global.html#event:move">move</a></li><li><a href="global.html#event:navigate">navigate</a></li><li><a href="global.html#event:opening">opening</a></li><li><a href="global.html#event:remove">remove</a></li><li><a href="global.html#event:reorder">reorder</a></li><li><a href="global.html#event:resize">resize</a></li><li><a href="global.html#event:set">set</a></li><li><a href="global.html#event:submit">submit</a></li><li><a href="global.html#event:toggle">toggle</a></li><li><a href="global.html#event:update">update</a></li><li><a href="global.html#event:valid">valid</a></li><li><a href="global.html#event:visibleItemChange">visibleItemChange</a></li><li><a href="global.html#event:flagAflageventisemittedwhenthe#clearFlagsor#setFlagsmethodsareused.The%2560changes%2560parametercontainsthenameofeachmodifiedflagandindicateswhetheritwasaddedorremoved.">flag
+A flag event is emitted when the #clearFlags or #setFlags methods are used. The `changes`
+parameter contains the name of each modified flag and indicates whether it was
+added or removed.</a></li><li><a href="OO.ui.ButtonElement.html#event:click">click</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.SelectWidget.html#event:add">add</a></li><li><a href="OO.ui.SelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.SelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.SelectWidget.html#event:press">press</a></li><li><a href="OO.ui.SelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.SelectWidget.html#event:select">select</a></li><li><a href="OO.ui.TabSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.TabSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.TabSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.TabSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.TabSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.TabSelectWidget.html#event:select">select</a></li><li><a href="global.html#event:readyThemenuisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The menu is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:readyThepopupisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The popup is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:removeAremoveactionwasperformedontheitem">remove
+
+A remove action was performed on the item</a></li><li><a href="global.html#event:resizeAresizeeventisemittedwhenthewidget'sdimensionschangetoaccomodatenewlyaddeditemsorcurrentuserinput.">resize
+
+A resize event is emitted when the widget's dimensions change to accomodate newly added items or
+current user input.</a></li><li><a href="global.html#event:selectAselecteventisemittedwhenanitemisselectedordeselected.">select
+
+A select event is emitted when an item is selected or deselected.</a></li><li><a href="global.html#event:selectThetagwidgetwasselected.Thiscanoccurwhenthewidgetiseitherclickedorenterwaspressedonit.">select
+
+The tag widget was selected. This can occur when the widget
+is either clicked or enter was pressed on it.</a></li><li><a href="global.html#event:updateStateAn'updateState'eventmustbeemittedontheToolbar(bycalling%2560toolbar.emit('updateState')%2560)everytimethestateoftheapplicationusingthetoolbarchanges,andanupdatetothestateoftoolsisrequired.">updateState
+
+An 'updateState' event must be emitted on the Toolbar (by calling `toolbar.emit( 'updateState' )`)
+every time the state of the application using the toolbar changes, and an update to the state of
+tools is required.</a></li></ul><h3>Mixins</h3><ul><li><a href="OO.ui.mixin.AccessKeyedElement.html">AccessKeyedElement</a></li><li><a href="OO.ui.mixin.ButtonElement.html">ButtonElement</a></li><li><a href="OO.ui.mixin.ClippableElement.html">ClippableElement</a></li><li><a href="OO.ui.mixin.DraggableElement.html">DraggableElement</a></li><li><a href="OO.ui.mixin.DraggableGroupElement.html">DraggableGroupElement</a></li><li><a href="OO.ui.mixin.FlaggedElement.html">FlaggedElement</a></li><li><a href="OO.ui.mixin.FloatableElement.html">FloatableElement</a></li><li><a href="OO.ui.mixin.GroupElement.html">GroupElement</a></li><li><a href="OO.ui.mixin.GroupWidget.html">GroupWidget</a></li><li><a href="OO.ui.mixin.IconElement.html">IconElement</a></li><li><a href="OO.ui.mixin.IndicatorElement.html">IndicatorElement</a></li><li><a href="OO.ui.mixin.LabelElement.html">LabelElement</a></li><li><a href="OO.ui.mixin.LookupElement.html">LookupElement</a></li><li><a href="OO.ui.mixin.PendingElement.html">PendingElement</a></li><li><a href="OO.ui.mixin.PopupElement.html">PopupElement</a></li><li><a href="OO.ui.mixin.RequestManager.html">RequestManager</a></li><li><a href="OO.ui.mixin.TabIndexedElement.html">TabIndexedElement</a></li><li><a href="OO.ui.mixin.TitledElement.html">TitledElement</a></li></ul><h3>Global</h3><ul><li><a href="global.html#isActive">isActive</a></li><li><a href="global.html#setActive">setActive</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Jan 11 2018 12:31:37 GMT+0530 (IST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

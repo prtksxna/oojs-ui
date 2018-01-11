@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: ActionSet.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: ActionSet.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/* eslint-disable no-unused-vars */
+/**
+ * ActionSets manage the behavior of the {@link OO.ui.ActionWidget action widgets} that comprise them.
+ * Actions can be made available for specific contexts (modes) and circumstances
+ * (abilities). Action sets are primarily used with {@link OO.ui.Dialog Dialogs}.
+ *
+ * ActionSets contain two types of actions:
+ *
+ * - Special: Special actions are the first visible actions with special flags, such as 'safe' and 'primary', the default special flags. Additional special flags can be configured in subclasses with the static #specialFlags property.
+ * - Other: Other actions include all non-special visible actions.
+ *
+ * Please see the [OOjs UI documentation on MediaWiki][1] for more information.
+ *
+ *     @example
+ *     // Example: An action set used in a process dialog
+ *     function MyProcessDialog( config ) {
+ *         MyProcessDialog.parent.call( this, config );
+ *     }
+ *     OO.inheritClass( MyProcessDialog, OO.ui.ProcessDialog );
+ *     MyProcessDialog.static.title = 'An action set in a process dialog';
+ *     MyProcessDialog.static.name = 'myProcessDialog';
+ *     // An action set that uses modes ('edit' and 'help' mode, in this example).
+ *     MyProcessDialog.static.actions = [
+ *         { action: 'continue', modes: 'edit', label: 'Continue', flags: [ 'primary', 'progressive' ] },
+ *         { action: 'help', modes: 'edit', label: 'Help' },
+ *         { modes: 'edit', label: 'Cancel', flags: 'safe' },
+ *         { action: 'back', modes: 'help', label: 'Back', flags: 'safe' }
+ *     ];
+ *
+ *     MyProcessDialog.prototype.initialize = function () {
+ *         MyProcessDialog.parent.prototype.initialize.apply( this, arguments );
+ *         this.panel1 = new OO.ui.PanelLayout( { padded: true, expanded: false } );
+ *         this.panel1.$element.append( '&lt;p>This dialog uses an action set (continue, help, cancel, back) configured with modes. This is edit mode. Click \'help\' to see help mode.&lt;/p>' );
+ *         this.panel2 = new OO.ui.PanelLayout( { padded: true, expanded: false } );
+ *         this.panel2.$element.append( '&lt;p>This is help mode. Only the \'back\' action widget is configured to be visible here. Click \'back\' to return to \'edit\' mode.&lt;/p>' );
+ *         this.stackLayout = new OO.ui.StackLayout( {
+ *             items: [ this.panel1, this.panel2 ]
+ *         } );
+ *         this.$body.append( this.stackLayout.$element );
+ *     };
+ *     MyProcessDialog.prototype.getSetupProcess = function ( data ) {
+ *         return MyProcessDialog.parent.prototype.getSetupProcess.call( this, data )
+ *             .next( function () {
+ *                 this.actions.setMode( 'edit' );
+ *             }, this );
+ *     };
+ *     MyProcessDialog.prototype.getActionProcess = function ( action ) {
+ *         if ( action === 'help' ) {
+ *             this.actions.setMode( 'help' );
+ *             this.stackLayout.setItem( this.panel2 );
+ *         } else if ( action === 'back' ) {
+ *             this.actions.setMode( 'edit' );
+ *             this.stackLayout.setItem( this.panel1 );
+ *         } else if ( action === 'continue' ) {
+ *             var dialog = this;
+ *             return new OO.ui.Process( function () {
+ *                 dialog.close();
+ *             } );
+ *         }
+ *         return MyProcessDialog.parent.prototype.getActionProcess.call( this, action );
+ *     };
+ *     MyProcessDialog.prototype.getBodyHeight = function () {
+ *         return this.panel1.$element.outerHeight( true );
+ *     };
+ *     var windowManager = new OO.ui.WindowManager();
+ *     $( 'body' ).append( windowManager.$element );
+ *     var dialog = new MyProcessDialog( {
+ *         size: 'medium'
+ *     } );
+ *     windowManager.addWindows( [ dialog ] );
+ *     windowManager.openWindow( dialog );
+ *
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Windows/Process_Dialogs#Action_sets
+ *
+ * @abstract
+ * @class
+ * @mixes OO.EventEmitter
+ *
+ * @constructor
+ * @param {Object} [config] Configuration options
+ */
+OO.ui.ActionSet = function OoUiActionSet( config ) {
+	// Configuration initialization
+	config = config || {};
+
+	// Mixin constructors
+	OO.EventEmitter.call( this );
+
+	// Properties
+	this.list = [];
+	this.categories = {
+		actions: 'getAction',
+		flags: 'getFlags',
+		modes: 'getModes'
+	};
+	this.categorized = {};
+	this.special = {};
+	this.others = [];
+	this.organized = false;
+	this.changing = false;
+	this.changed = false;
+};
+/* eslint-enable no-unused-vars */
+
+/* Setup */
+
+OO.mixinClass( OO.ui.ActionSet, OO.EventEmitter );
+
+/* Static Properties */
+
+/**
+ * Symbolic name of the flags used to identify special actions. Special actions are displayed in the
+ *  header of a {@link OO.ui.ProcessDialog process dialog}.
+ *  See the [OOjs UI documentation on MediaWiki][2] for more information and examples.
+ *
+ *  [2]:https://www.mediawiki.org/wiki/OOjs_UI/Windows/Process_Dialogs
+ *
+ * @abstract
+ * @static
+ * @inheritable
+ * @property {string}
+ */
+OO.ui.ActionSet.static.specialFlags = [ 'safe', 'primary' ];
+
+/* Events */
+
+/**
+ * A 'click' event is emitted when an action is clicked.
+ *
+ * @event click
+ * @param {OO.ui.ActionWidget} action Action that was clicked
+ */
+
+/**
+ * An 'add' event is emitted when actions are {@link #method-add added} to the action set.
+ *
+ * @event add
+ * @param {OO.ui.ActionWidget[]} added Actions added
+ */
+
+/**
+ * A 'remove' event is emitted when actions are {@link #method-remove removed}
+ *  or {@link #clear cleared}.
+ *
+ * @event remove
+ * @param {OO.ui.ActionWidget[]} added Actions removed
+ */
+
+/**
+ *
+ * A 'change' event is emitted when actions are {@link #method-add added}, {@link #clear cleared},
+ * or {@link #method-remove removed} from the action set or when the {@link #setMode mode} is changed.
+ *
+ * @event change
+ */
+
+/* Methods */
+
+/**
+ * Handle action change events.
+ *
+ * @private
+ * @fires change
+ */
+OO.ui.ActionSet.prototype.onActionChange = function () {
+	this.organized = false;
+	if ( this.changing ) {
+		this.changed = true;
+	} else {
+		this.emit( 'change' );
+	}
+};
+
+/**
+ * Check if an action is one of the special actions.
+ *
+ * @param {OO.ui.ActionWidget} action Action to check
+ * @return {boolean} Action is special
+ */
+OO.ui.ActionSet.prototype.isSpecial = function ( action ) {
+	var flag;
+
+	for ( flag in this.special ) {
+		if ( action === this.special[ flag ] ) {
+			return true;
+		}
+	}
+
+	return false;
+};
+
+/**
+ * Get action widgets based on the specified filter: ‘actions’, ‘flags’, ‘modes’, ‘visible’,
+ *  or ‘disabled’.
+ *
+ * @param {Object} [filters] Filters to use, omit to get all actions
+ * @param {string|string[]} [filters.actions] Actions that action widgets must have
+ * @param {string|string[]} [filters.flags] Flags that action widgets must have (e.g., 'safe')
+ * @param {string|string[]} [filters.modes] Modes that action widgets must have
+ * @param {boolean} [filters.visible] Action widgets must be visible
+ * @param {boolean} [filters.disabled] Action widgets must be disabled
+ * @return {OO.ui.ActionWidget[]} Action widgets matching all criteria
+ */
+OO.ui.ActionSet.prototype.get = function ( filters ) {
+	var i, len, list, category, actions, index, match, matches;
+
+	if ( filters ) {
+		this.organize();
+
+		// Collect category candidates
+		matches = [];
+		for ( category in this.categorized ) {
+			list = filters[ category ];
+			if ( list ) {
+				if ( !Array.isArray( list ) ) {
+					list = [ list ];
+				}
+				for ( i = 0, len = list.length; i &lt; len; i++ ) {
+					actions = this.categorized[ category ][ list[ i ] ];
+					if ( Array.isArray( actions ) ) {
+						matches.push.apply( matches, actions );
+					}
+				}
+			}
+		}
+		// Remove by boolean filters
+		for ( i = 0, len = matches.length; i &lt; len; i++ ) {
+			match = matches[ i ];
+			if (
+				( filters.visible !== undefined &amp;&amp; match.isVisible() !== filters.visible ) ||
+				( filters.disabled !== undefined &amp;&amp; match.isDisabled() !== filters.disabled )
+			) {
+				matches.splice( i, 1 );
+				len--;
+				i--;
+			}
+		}
+		// Remove duplicates
+		for ( i = 0, len = matches.length; i &lt; len; i++ ) {
+			match = matches[ i ];
+			index = matches.lastIndexOf( match );
+			while ( index !== i ) {
+				matches.splice( index, 1 );
+				len--;
+				index = matches.lastIndexOf( match );
+			}
+		}
+		return matches;
+	}
+	return this.list.slice();
+};
+
+/**
+ * Get 'special' actions.
+ *
+ * Special actions are the first visible action widgets with special flags, such as 'safe' and 'primary'.
+ * Special flags can be configured in subclasses by changing the static #specialFlags property.
+ *
+ * @return {OO.ui.ActionWidget[]|null} 'Special' action widgets.
+ */
+OO.ui.ActionSet.prototype.getSpecial = function () {
+	this.organize();
+	return $.extend( {}, this.special );
+};
+
+/**
+ * Get 'other' actions.
+ *
+ * Other actions include all non-special visible action widgets.
+ *
+ * @return {OO.ui.ActionWidget[]} 'Other' action widgets
+ */
+OO.ui.ActionSet.prototype.getOthers = function () {
+	this.organize();
+	return this.others.slice();
+};
+
+/**
+ * Set the mode  (e.g., ‘edit’ or ‘view’). Only {@link OO.ui.ActionWidget#modes actions} configured
+ * to be available in the specified mode will be made visible. All other actions will be hidden.
+ *
+ * @param {string} mode The mode. Only actions configured to be available in the specified
+ *  mode will be made visible.
+ * @chainable
+ * @fires toggle
+ * @fires change
+ */
+OO.ui.ActionSet.prototype.setMode = function ( mode ) {
+	var i, len, action;
+
+	this.changing = true;
+	for ( i = 0, len = this.list.length; i &lt; len; i++ ) {
+		action = this.list[ i ];
+		action.toggle( action.hasMode( mode ) );
+	}
+
+	this.organized = false;
+	this.changing = false;
+	this.emit( 'change' );
+
+	return this;
+};
+
+/**
+ * Set the abilities of the specified actions.
+ *
+ * Action widgets that are configured with the specified actions will be enabled
+ * or disabled based on the boolean values specified in the `actions`
+ * parameter.
+ *
+ * @param {Object.&lt;string,boolean>} actions A list keyed by action name with boolean
+ *  values that indicate whether or not the action should be enabled.
+ * @chainable
+ */
+OO.ui.ActionSet.prototype.setAbilities = function ( actions ) {
+	var i, len, action, item;
+
+	for ( i = 0, len = this.list.length; i &lt; len; i++ ) {
+		item = this.list[ i ];
+		action = item.getAction();
+		if ( actions[ action ] !== undefined ) {
+			item.setDisabled( !actions[ action ] );
+		}
+	}
+
+	return this;
+};
+
+/**
+ * Executes a function once per action.
+ *
+ * When making changes to multiple actions, use this method instead of iterating over the actions
+ * manually to defer emitting a #change event until after all actions have been changed.
+ *
+ * @param {Object|null} filter Filters to use to determine which actions to iterate over; see #get
+ * @param {Function} callback Callback to run for each action; callback is invoked with three
+ *   arguments: the action, the action's index, the list of actions being iterated over
+ * @chainable
+ */
+OO.ui.ActionSet.prototype.forEach = function ( filter, callback ) {
+	this.changed = false;
+	this.changing = true;
+	this.get( filter ).forEach( callback );
+	this.changing = false;
+	if ( this.changed ) {
+		this.emit( 'change' );
+	}
+
+	return this;
+};
+
+/**
+ * Add action widgets to the action set.
+ *
+ * @param {OO.ui.ActionWidget[]} actions Action widgets to add
+ * @chainable
+ * @fires add
+ * @fires change
+ */
+OO.ui.ActionSet.prototype.add = function ( actions ) {
+	var i, len, action;
+
+	this.changing = true;
+	for ( i = 0, len = actions.length; i &lt; len; i++ ) {
+		action = actions[ i ];
+		action.connect( this, {
+			click: [ 'emit', 'click', action ],
+			toggle: [ 'onActionChange' ]
+		} );
+		this.list.push( action );
+	}
+	this.organized = false;
+	this.emit( 'add', actions );
+	this.changing = false;
+	this.emit( 'change' );
+
+	return this;
+};
+
+/**
+ * Remove action widgets from the set.
+ *
+ * To remove all actions, you may wish to use the #clear method instead.
+ *
+ * @param {OO.ui.ActionWidget[]} actions Action widgets to remove
+ * @chainable
+ * @fires remove
+ * @fires change
+ */
+OO.ui.ActionSet.prototype.remove = function ( actions ) {
+	var i, len, index, action;
+
+	this.changing = true;
+	for ( i = 0, len = actions.length; i &lt; len; i++ ) {
+		action = actions[ i ];
+		index = this.list.indexOf( action );
+		if ( index !== -1 ) {
+			action.disconnect( this );
+			this.list.splice( index, 1 );
+		}
+	}
+	this.organized = false;
+	this.emit( 'remove', actions );
+	this.changing = false;
+	this.emit( 'change' );
+
+	return this;
+};
+
+/**
+ * Remove all action widets from the set.
+ *
+ * To remove only specified actions, use the {@link #method-remove remove} method instead.
+ *
+ * @chainable
+ * @fires remove
+ * @fires change
+ */
+OO.ui.ActionSet.prototype.clear = function () {
+	var i, len, action,
+		removed = this.list.slice();
+
+	this.changing = true;
+	for ( i = 0, len = this.list.length; i &lt; len; i++ ) {
+		action = this.list[ i ];
+		action.disconnect( this );
+	}
+
+	this.list = [];
+
+	this.organized = false;
+	this.emit( 'remove', removed );
+	this.changing = false;
+	this.emit( 'change' );
+
+	return this;
+};
+
+/**
+ * Organize actions.
+ *
+ * This is called whenever organized information is requested. It will only reorganize the actions
+ * if something has changed since the last time it ran.
+ *
+ * @private
+ * @chainable
+ */
+OO.ui.ActionSet.prototype.organize = function () {
+	var i, iLen, j, jLen, flag, action, category, list, item, special,
+		specialFlags = this.constructor.static.specialFlags;
+
+	if ( !this.organized ) {
+		this.categorized = {};
+		this.special = {};
+		this.others = [];
+		for ( i = 0, iLen = this.list.length; i &lt; iLen; i++ ) {
+			action = this.list[ i ];
+			if ( action.isVisible() ) {
+				// Populate categories
+				for ( category in this.categories ) {
+					if ( !this.categorized[ category ] ) {
+						this.categorized[ category ] = {};
+					}
+					list = action[ this.categories[ category ] ]();
+					if ( !Array.isArray( list ) ) {
+						list = [ list ];
+					}
+					for ( j = 0, jLen = list.length; j &lt; jLen; j++ ) {
+						item = list[ j ];
+						if ( !this.categorized[ category ][ item ] ) {
+							this.categorized[ category ][ item ] = [];
+						}
+						this.categorized[ category ][ item ].push( action );
+					}
+				}
+				// Populate special/others
+				special = false;
+				for ( j = 0, jLen = specialFlags.length; j &lt; jLen; j++ ) {
+					flag = specialFlags[ j ];
+					if ( !this.special[ flag ] &amp;&amp; action.hasFlag( flag ) ) {
+						this.special[ flag ] = action;
+						special = true;
+						break;
+					}
+				}
+				if ( !special ) {
+					this.others.push( action );
+				}
+			}
+		}
+		this.organized = true;
+	}
+
+	return this;
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="OO.ui.html">ui</a></li><li><a href="OO.ui.ActionFieldLayout.html">ActionFieldLayout</a></li><li><a href="OO.ui.ActionSet.html">ActionSet</a></li><li><a href="OO.ui.ActionWidget.html">ActionWidget</a></li><li><a href="OO.ui.ApexTheme.html">ApexTheme</a></li><li><a href="OO.ui.BarToolGroup.html">BarToolGroup</a></li><li><a href="OO.ui.BlankTheme.html">BlankTheme</a></li><li><a href="OO.ui.BookletLayout.html">BookletLayout</a></li><li><a href="OO.ui.ButtonGroupWidget.html">ButtonGroupWidget</a></li><li><a href="OO.ui.ButtonInputWidget.html">ButtonInputWidget</a></li><li><a href="OO.ui.ButtonOptionWidget.html">ButtonOptionWidget</a></li><li><a href="OO.ui.ButtonSelectWidget.html">ButtonSelectWidget</a></li><li><a href="OO.ui.ButtonWidget.html">ButtonWidget</a></li><li><a href="OO.ui.CapsuleItemWidget.html">CapsuleItemWidget</a></li><li><a href="OO.ui.CapsuleMultiselectWidget.html">CapsuleMultiselectWidget</a></li><li><a href="OO.ui.CheckboxInputWidget.html">CheckboxInputWidget</a></li><li><a href="OO.ui.CheckboxMultioptionWidget.html">CheckboxMultioptionWidget</a></li><li><a href="OO.ui.CheckboxMultiselectInputWidget.html">CheckboxMultiselectInputWidget</a></li><li><a href="OO.ui.CheckboxMultiselectWidget.html">CheckboxMultiselectWidget</a></li><li><a href="OO.ui.ComboBoxInputWidget.html">ComboBoxInputWidget</a></li><li><a href="OO.ui.DecoratedOptionWidget.html">DecoratedOptionWidget</a></li><li><a href="OO.ui.Dialog.html">Dialog</a></li><li><a href="OO.ui.DropdownInputWidget.html">DropdownInputWidget</a></li><li><a href="OO.ui.DropdownWidget.html">DropdownWidget</a></li><li><a href="OO.ui.Element.html">Element</a></li><li><a href="OO.ui.Error.html">Error</a></li><li><a href="OO.ui.FieldLayout.html">FieldLayout</a></li><li><a href="OO.ui.FieldsetLayout.html">FieldsetLayout</a></li><li><a href="OO.ui.FormLayout.html">FormLayout</a></li><li><a href="OO.ui.HiddenInputWidget.html">HiddenInputWidget</a></li><li><a href="OO.ui.HorizontalLayout.html">HorizontalLayout</a></li><li><a href="OO.ui.HtmlSnippet.html">HtmlSnippet</a></li><li><a href="OO.ui.IconWidget.html">IconWidget</a></li><li><a href="OO.ui.IndexLayout.html">IndexLayout</a></li><li><a href="OO.ui.IndicatorWidget.html">IndicatorWidget</a></li><li><a href="OO.ui.InputWidget.html">InputWidget</a></li><li><a href="OO.ui.LabelWidget.html">LabelWidget</a></li><li><a href="OO.ui.Layout.html">Layout</a></li><li><a href="OO.ui.ListToolGroup.html">ListToolGroup</a></li><li><a href="OO.ui.MenuLayout.html">MenuLayout</a></li><li><a href="OO.ui.MenuOptionWidget.html">MenuOptionWidget</a></li><li><a href="OO.ui.MenuSectionOptionWidget.html">MenuSectionOptionWidget</a></li><li><a href="OO.ui.MenuSelectWidget.html">MenuSelectWidget</a></li><li><a href="OO.ui.MenuTagMultiselectWidget.html">MenuTagMultiselectWidget</a></li><li><a href="OO.ui.MenuToolGroup.html">MenuToolGroup</a></li><li><a href="OO.ui.MessageDialog.html">MessageDialog</a></li><li><a href="OO.ui.mixin.html">mixin</a></li><li><a href="OO.ui.MultilineTextInputWidget.html">MultilineTextInputWidget</a></li><li><a href="OO.ui.MultioptionWidget.html">MultioptionWidget</a></li><li><a href="OO.ui.MultiselectWidget.html">MultiselectWidget</a></li><li><a href="OO.ui.NumberInputWidget.html">NumberInputWidget</a></li><li><a href="OO.ui.OptionWidget.html">OptionWidget</a></li><li><a href="OO.ui.OutlineControlsWidget.html">OutlineControlsWidget</a></li><li><a href="OO.ui.OutlineOptionWidget.html">OutlineOptionWidget</a></li><li><a href="OO.ui.OutlineSelectWidget.html">OutlineSelectWidget</a></li><li><a href="OO.ui.PageLayout.html">PageLayout</a></li><li><a href="OO.ui.PanelLayout.html">PanelLayout</a></li><li><a href="OO.ui.PopupButtonWidget.html">PopupButtonWidget</a></li><li><a href="OO.ui.PopupTagMultiselectWidget.html">PopupTagMultiselectWidget</a></li><li><a href="OO.ui.PopupTool.html">PopupTool</a></li><li><a href="OO.ui.PopupToolGroup.html">PopupToolGroup</a></li><li><a href="OO.ui.PopupWidget.html">PopupWidget</a></li><li><a href="OO.ui.Process.html">Process</a></li><li><a href="OO.ui.ProcessDialog.html">ProcessDialog</a></li><li><a href="OO.ui.ProgressBarWidget.html">ProgressBarWidget</a></li><li><a href="OO.ui.RadioInputWidget.html">RadioInputWidget</a></li><li><a href="OO.ui.RadioOptionWidget.html">RadioOptionWidget</a></li><li><a href="OO.ui.RadioSelectInputWidget.html">RadioSelectInputWidget</a></li><li><a href="OO.ui.RadioSelectWidget.html">RadioSelectWidget</a></li><li><a href="OO.ui.SearchInputWidget.html">SearchInputWidget</a></li><li><a href="OO.ui.SearchWidget.html">SearchWidget</a></li><li><a href="OO.ui.SelectFileWidget.html">SelectFileWidget</a></li><li><a href="OO.ui.SelectWidget.html">SelectWidget</a></li><li><a href="OO.ui.StackLayout.html">StackLayout</a></li><li><a href="OO.ui.TabOptionWidget.html">TabOptionWidget</a></li><li><a href="OO.ui.TabPanelLayout.html">TabPanelLayout</a></li><li><a href="OO.ui.TabSelectWidget.html">TabSelectWidget</a></li><li><a href="OO.ui.TagItemWidget.html">TagItemWidget</a></li><li><a href="OO.ui.TagMultiselectWidget.html">TagMultiselectWidget</a></li><li><a href="OO.ui.TextInputWidget.html">TextInputWidget</a></li><li><a href="OO.ui.Theme.html">Theme</a></li><li><a href="OO.ui.ToggleButtonWidget.html">ToggleButtonWidget</a></li><li><a href="OO.ui.ToggleSwitchWidget.html">ToggleSwitchWidget</a></li><li><a href="OO.ui.ToggleWidget.html">ToggleWidget</a></li><li><a href="OO.ui.Tool.html">Tool</a></li><li><a href="OO.ui.Toolbar.html">Toolbar</a></li><li><a href="OO.ui.ToolFactory.html">ToolFactory</a></li><li><a href="OO.ui.ToolGroup.html">ToolGroup</a></li><li><a href="OO.ui.ToolGroupFactory.html">ToolGroupFactory</a></li><li><a href="OO.ui.ToolGroupTool.html">ToolGroupTool</a></li><li><a href="OO.ui.Widget.html">Widget</a></li><li><a href="OO.ui.WikimediaUITheme.html">WikimediaUITheme</a></li><li><a href="OO.ui.Window.html">Window</a></li><li><a href="OO.ui.WindowInstance.html">WindowInstance</a></li><li><a href="OO.ui.WindowManager.html">WindowManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:changeAchangeeventisemittedwhentheon/offstateofthetogglechanges.">change
+
+A change event is emitted when the on/off state of the toggle changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhentheselectedstateoftheoptionchanges.">change
+
+A change event is emitted when the selected state of the option changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofitemschanges,oranitemisselectedordeselected.">change
+
+A change event is emitted when the set of items changes, or an item is selected or deselected.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofselecteditemschanges.">change
+
+A change event is emitted when the set of selected items changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthevalueoftheinputchanges.">change
+
+A change event is emitted when the value of the input changes.</a></li><li><a href="global.html#event:dragendAdragendeventisemittedwhentheuserdragsanitemandreleasesthemouse,thusterminatingthedragoperation.">dragend
+A dragend event is emitted when the user drags an item and releases the mouse,
+thus terminating the drag operation.</a></li><li><a href="global.html#event:dragstartAdragstarteventisemittedwhentheuserclicksandbeginsdragginganitem.">dragstart
+
+A dragstart event is emitted when the user clicks and begins dragging an item.</a></li><li><a href="global.html#event:dropAdropeventisemittedwhentheuserdragsanitemandthenreleasesthemousebuttonoveravalidtarget.">drop
+A drop event is emitted when the user drags an item and then releases the mouse button
+over a valid target.</a></li><li><a href="global.html#event:active">active</a></li><li><a href="global.html#event:add">add</a></li><li><a href="global.html#event:change">change</a></li><li><a href="global.html#event:click">click</a></li><li><a href="global.html#event:closing">closing</a></li><li><a href="global.html#event:disable">disable</a></li><li><a href="global.html#event:drag">drag</a></li><li><a href="global.html#event:draggable">draggable</a></li><li><a href="global.html#event:enter">enter</a></li><li><a href="global.html#event:labelChange">labelChange</a></li><li><a href="global.html#event:move">move</a></li><li><a href="global.html#event:navigate">navigate</a></li><li><a href="global.html#event:opening">opening</a></li><li><a href="global.html#event:remove">remove</a></li><li><a href="global.html#event:reorder">reorder</a></li><li><a href="global.html#event:resize">resize</a></li><li><a href="global.html#event:set">set</a></li><li><a href="global.html#event:submit">submit</a></li><li><a href="global.html#event:toggle">toggle</a></li><li><a href="global.html#event:update">update</a></li><li><a href="global.html#event:valid">valid</a></li><li><a href="global.html#event:visibleItemChange">visibleItemChange</a></li><li><a href="global.html#event:flagAflageventisemittedwhenthe#clearFlagsor#setFlagsmethodsareused.The%2560changes%2560parametercontainsthenameofeachmodifiedflagandindicateswhetheritwasaddedorremoved.">flag
+A flag event is emitted when the #clearFlags or #setFlags methods are used. The `changes`
+parameter contains the name of each modified flag and indicates whether it was
+added or removed.</a></li><li><a href="OO.ui.ButtonElement.html#event:click">click</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.SelectWidget.html#event:add">add</a></li><li><a href="OO.ui.SelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.SelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.SelectWidget.html#event:press">press</a></li><li><a href="OO.ui.SelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.SelectWidget.html#event:select">select</a></li><li><a href="OO.ui.TabSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.TabSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.TabSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.TabSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.TabSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.TabSelectWidget.html#event:select">select</a></li><li><a href="global.html#event:readyThemenuisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The menu is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:readyThepopupisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The popup is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:removeAremoveactionwasperformedontheitem">remove
+
+A remove action was performed on the item</a></li><li><a href="global.html#event:resizeAresizeeventisemittedwhenthewidget'sdimensionschangetoaccomodatenewlyaddeditemsorcurrentuserinput.">resize
+
+A resize event is emitted when the widget's dimensions change to accomodate newly added items or
+current user input.</a></li><li><a href="global.html#event:selectAselecteventisemittedwhenanitemisselectedordeselected.">select
+
+A select event is emitted when an item is selected or deselected.</a></li><li><a href="global.html#event:selectThetagwidgetwasselected.Thiscanoccurwhenthewidgetiseitherclickedorenterwaspressedonit.">select
+
+The tag widget was selected. This can occur when the widget
+is either clicked or enter was pressed on it.</a></li><li><a href="global.html#event:updateStateAn'updateState'eventmustbeemittedontheToolbar(bycalling%2560toolbar.emit('updateState')%2560)everytimethestateoftheapplicationusingthetoolbarchanges,andanupdatetothestateoftoolsisrequired.">updateState
+
+An 'updateState' event must be emitted on the Toolbar (by calling `toolbar.emit( 'updateState' )`)
+every time the state of the application using the toolbar changes, and an update to the state of
+tools is required.</a></li></ul><h3>Mixins</h3><ul><li><a href="OO.ui.mixin.AccessKeyedElement.html">AccessKeyedElement</a></li><li><a href="OO.ui.mixin.ButtonElement.html">ButtonElement</a></li><li><a href="OO.ui.mixin.ClippableElement.html">ClippableElement</a></li><li><a href="OO.ui.mixin.DraggableElement.html">DraggableElement</a></li><li><a href="OO.ui.mixin.DraggableGroupElement.html">DraggableGroupElement</a></li><li><a href="OO.ui.mixin.FlaggedElement.html">FlaggedElement</a></li><li><a href="OO.ui.mixin.FloatableElement.html">FloatableElement</a></li><li><a href="OO.ui.mixin.GroupElement.html">GroupElement</a></li><li><a href="OO.ui.mixin.GroupWidget.html">GroupWidget</a></li><li><a href="OO.ui.mixin.IconElement.html">IconElement</a></li><li><a href="OO.ui.mixin.IndicatorElement.html">IndicatorElement</a></li><li><a href="OO.ui.mixin.LabelElement.html">LabelElement</a></li><li><a href="OO.ui.mixin.LookupElement.html">LookupElement</a></li><li><a href="OO.ui.mixin.PendingElement.html">PendingElement</a></li><li><a href="OO.ui.mixin.PopupElement.html">PopupElement</a></li><li><a href="OO.ui.mixin.RequestManager.html">RequestManager</a></li><li><a href="OO.ui.mixin.TabIndexedElement.html">TabIndexedElement</a></li><li><a href="OO.ui.mixin.TitledElement.html">TitledElement</a></li></ul><h3>Global</h3><ul><li><a href="global.html#isActive">isActive</a></li><li><a href="global.html#setActive">setActive</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Jan 11 2018 12:31:36 GMT+0530 (IST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

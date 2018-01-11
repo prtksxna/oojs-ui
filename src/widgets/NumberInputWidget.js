@@ -18,14 +18,14 @@
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {Object} [minusButton] Configuration options to pass to the {@link OO.ui.ButtonWidget decrementing button widget}.
- * @cfg {Object} [plusButton] Configuration options to pass to the {@link OO.ui.ButtonWidget incrementing button widget}.
- * @cfg {boolean} [allowInteger=false] Whether the field accepts only integer values.
- * @cfg {number} [min=-Infinity] Minimum allowed value
- * @cfg {number} [max=Infinity] Maximum allowed value
- * @cfg {number} [step=1] Delta when using the buttons or up/down arrow keys
- * @cfg {number|null} [pageStep] Delta when using the page-up/page-down keys. Defaults to 10 times #step.
- * @cfg {boolean} [showButtons=true] Whether to show the plus and minus buttons.
+ * @param {Object} [config.minusButton] Configuration options to pass to the {@link OO.ui.ButtonWidget decrementing button widget}.
+ * @param {Object} [config.plusButton] Configuration options to pass to the {@link OO.ui.ButtonWidget incrementing button widget}.
+ * @param {boolean} [config.allowInteger=false] Whether the field accepts only integer values.
+ * @param {number} [config.min=-Infinity] Minimum allowed value
+ * @param {number} [config.max=Infinity] Maximum allowed value
+ * @param {number} [config.step=1] Delta when using the buttons or up/down arrow keys
+ * @param {number|null} [config.pageStep] Delta when using the page-up/page-down keys. Defaults to 10 times #step.
+ * @param {boolean} [config.showButtons=true] Whether to show the plus and minus buttons.
  */
 OO.ui.NumberInputWidget = function OoUiNumberInputWidget( config ) {
 	var $field = $( '<div>' )

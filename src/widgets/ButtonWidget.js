@@ -19,21 +19,21 @@
  *
  * @class
  * @extends OO.ui.Widget
- * @mixins OO.ui.mixin.ButtonElement
- * @mixins OO.ui.mixin.IconElement
- * @mixins OO.ui.mixin.IndicatorElement
- * @mixins OO.ui.mixin.LabelElement
- * @mixins OO.ui.mixin.TitledElement
- * @mixins OO.ui.mixin.FlaggedElement
- * @mixins OO.ui.mixin.TabIndexedElement
- * @mixins OO.ui.mixin.AccessKeyedElement
+ * @mixes OO.ui.mixin.ButtonElement
+ * @mixes OO.ui.mixin.IconElement
+ * @mixes OO.ui.mixin.IndicatorElement
+ * @mixes OO.ui.mixin.LabelElement
+ * @mixes OO.ui.mixin.TitledElement
+ * @mixes OO.ui.mixin.FlaggedElement
+ * @mixes OO.ui.mixin.TabIndexedElement
+ * @mixes OO.ui.mixin.AccessKeyedElement
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {boolean} [active=false] Whether button should be shown as active
- * @cfg {string} [href] Hyperlink to visit when the button is clicked.
- * @cfg {string} [target] The frame or window in which to open the hyperlink.
- * @cfg {boolean} [noFollow] Search engine traversal hint (default: true)
+ * @param {boolean} [config.active=false] Whether button should be shown as active
+ * @param {string} [config.href] Hyperlink to visit when the button is clicked.
+ * @param {string} [config.target] The frame or window in which to open the hyperlink.
+ * @param {boolean} [congif.noFollow] Search engine traversal hint (default: true)
  */
 OO.ui.ButtonWidget = function OoUiButtonWidget( config ) {
 	// Configuration initialization

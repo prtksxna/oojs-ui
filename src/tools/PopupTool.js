@@ -27,7 +27,7 @@
  * @abstract
  * @class
  * @extends OO.ui.Tool
- * @mixins OO.ui.mixin.PopupElement
+ * @mixes OO.ui.mixin.PopupElement
  *
  * @constructor
  * @param {OO.ui.ToolGroup} toolGroup

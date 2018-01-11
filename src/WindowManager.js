@@ -43,14 +43,14 @@
  *
  * @class
  * @extends OO.ui.Element
- * @mixins OO.EventEmitter
+ * @mixes OO.EventEmitter
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {OO.Factory} [factory] Window factory to use for automatic instantiation
+ * @param {OO.Factory} [config.factory] Window factory to use for automatic instantiation
  *  Note that window classes that are instantiated with a factory must have
  *  a {@link OO.ui.Dialog#static-name static name} property that specifies a symbolic name.
- * @cfg {boolean} [modal=true] Prevent interaction outside the dialog
+ * @param {boolean} [config.modal=true] Prevent interaction outside the dialog
  */
 OO.ui.WindowManager = function OoUiWindowManager( config ) {
 	// Configuration initialization

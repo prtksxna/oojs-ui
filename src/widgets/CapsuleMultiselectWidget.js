@@ -40,26 +40,26 @@
  *
  * @class
  * @extends OO.ui.Widget
- * @mixins OO.ui.mixin.GroupElement
- * @mixins OO.ui.mixin.PopupElement
- * @mixins OO.ui.mixin.TabIndexedElement
- * @mixins OO.ui.mixin.IndicatorElement
- * @mixins OO.ui.mixin.IconElement
+ * @mixes OO.ui.mixin.GroupElement
+ * @mixes OO.ui.mixin.PopupElement
+ * @mixes OO.ui.mixin.TabIndexedElement
+ * @mixes OO.ui.mixin.IndicatorElement
+ * @mixes OO.ui.mixin.IconElement
  * @uses OO.ui.CapsuleItemWidget
  * @uses OO.ui.MenuSelectWidget
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {string} [placeholder] Placeholder text
- * @cfg {boolean} [allowArbitrary=false] Allow data items to be added even if not present in the menu.
- * @cfg {boolean} [allowDuplicates=false] Allow duplicate items to be added.
- * @cfg {Object} [menu] (required) Configuration options to pass to the
+ * @param {string} [config.placeholder] Placeholder text
+ * @param {boolean} [config.allowArbitrary=false] Allow data items to be added even if not present in the menu.
+ * @param {boolean} [config.allowDuplicates=false] Allow duplicate items to be added.
+ * @param {Object} [config.menu] (required) Configuration options to pass to the
  *  {@link OO.ui.MenuSelectWidget menu select widget}.
- * @cfg {Object} [popup] Configuration options to pass to the {@link OO.ui.PopupWidget popup widget}.
+ * @param {Object} [config.popup] Configuration options to pass to the {@link OO.ui.PopupWidget popup widget}.
  *  If specified, this popup will be shown instead of the menu (but the menu
  *  will still be used for item labels and allowArbitrary=false). The widgets
  *  in the popup should use {@link #addItemsFromData} or {@link #addItems} as necessary.
- * @cfg {jQuery} [$overlay=this.$element] Render the menu or popup into a separate layer.
+ * @param {jQuery} [config.$overlay=this.$element] Render the menu or popup into a separate layer.
  *  This configuration is useful in cases where the expanded menu is larger than
  *  its containing `<div>`. The specified overlay layer is usually on top of
  *  the containing `<div>` and has a larger area. By default, the menu uses

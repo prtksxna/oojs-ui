@@ -32,17 +32,17 @@
  *
  * @class
  * @extends OO.ui.Layout
- * @mixins OO.ui.mixin.IconElement
- * @mixins OO.ui.mixin.LabelElement
- * @mixins OO.ui.mixin.GroupElement
+ * @mixes OO.ui.mixin.IconElement
+ * @mixes OO.ui.mixin.LabelElement
+ * @mixes OO.ui.mixin.GroupElement
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {OO.ui.FieldLayout[]} [items] An array of fields to add to the fieldset. See OO.ui.FieldLayout for more information about fields.
- * @cfg {string|OO.ui.HtmlSnippet} [help] Help text. When help text is specified, a "help" icon will appear
+ * @param {OO.ui.FieldLayout[]} [config.items] An array of fields to add to the fieldset. See OO.ui.FieldLayout for more information about fields.
+ * @param {string|OO.ui.HtmlSnippet} [config.help] Help text. When help text is specified, a "help" icon will appear
  *  in the upper-right corner of the rendered field; clicking it will display the text in a popup.
  *  For important messages, you are advised to use `notices`, as they are always shown.
- * @cfg {jQuery} [$overlay] Passed to OO.ui.PopupButtonWidget for help popup, if `help` is given.
+ * @param {jQuery} [config.$overlay] Passed to OO.ui.PopupButtonWidget for help popup, if `help` is given.
  *  See <https://www.mediawiki.org/wiki/OOjs_UI/Concepts#Overlays>.
  */
 OO.ui.FieldsetLayout = function OoUiFieldsetLayout( config ) {

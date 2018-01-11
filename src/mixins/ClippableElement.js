@@ -12,13 +12,11 @@
  * but you can build a static footer by setting #$clippableContainer to an element that contains
  * #$clippable and the footer.
  *
- * @abstract
- * @class
+ * @mixin
  *
- * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {jQuery} [$clippable] Node to clip, assigned to #$clippable, omit to use #$element
- * @cfg {jQuery} [$clippableContainer] Node to keep visible, assigned to #$clippableContainer,
+ * @param {jQuery} [config.$clippable] Node to clip, assigned to #$clippable, omit to use #$element
+ * @param {jQuery} [config.$clippableContainer] Node to keep visible, assigned to #$clippableContainer,
  *   omit to use #$clippable
  */
 OO.ui.mixin.ClippableElement = function OoUiMixinClippableElement( config ) {

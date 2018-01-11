@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: layouts/BookletLayout.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: layouts/BookletLayout.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * BookletLayouts contain {@link OO.ui.PageLayout page layouts} as well as
+ * an {@link OO.ui.OutlineSelectWidget outline} that allows users to easily navigate
+ * through the pages and select which one to display. By default, only one page is
+ * displayed at a time and the outline is hidden. When a user navigates to a new page,
+ * the booklet layout automatically focuses on the first focusable element, unless the
+ * default setting is changed. Optionally, booklets can be configured to show
+ * {@link OO.ui.OutlineControlsWidget controls} for adding, moving, and removing items.
+ *
+ *     @example
+ *     // Example of a BookletLayout that contains two PageLayouts.
+ *
+ *     function PageOneLayout( name, config ) {
+ *         PageOneLayout.parent.call( this, name, config );
+ *         this.$element.append( '&lt;p>First page&lt;/p>&lt;p>(This booklet has an outline, displayed on the left)&lt;/p>' );
+ *     }
+ *     OO.inheritClass( PageOneLayout, OO.ui.PageLayout );
+ *     PageOneLayout.prototype.setupOutlineItem = function () {
+ *         this.outlineItem.setLabel( 'Page One' );
+ *     };
+ *
+ *     function PageTwoLayout( name, config ) {
+ *         PageTwoLayout.parent.call( this, name, config );
+ *         this.$element.append( '&lt;p>Second page&lt;/p>' );
+ *     }
+ *     OO.inheritClass( PageTwoLayout, OO.ui.PageLayout );
+ *     PageTwoLayout.prototype.setupOutlineItem = function () {
+ *         this.outlineItem.setLabel( 'Page Two' );
+ *     };
+ *
+ *     var page1 = new PageOneLayout( 'one' ),
+ *         page2 = new PageTwoLayout( 'two' );
+ *
+ *     var booklet = new OO.ui.BookletLayout( {
+ *         outlined: true
+ *     } );
+ *
+ *     booklet.addPages ( [ page1, page2 ] );
+ *     $( 'body' ).append( booklet.$element );
+ *
+ * @class
+ * @extends OO.ui.MenuLayout
+ *
+ * @constructor
+ * @param {Object} [config] Configuration options
+ * @param {boolean} [config.continuous=false] Show all pages, one after another
+ * @param {boolean} [config.autoFocus=true] Focus on the first focusable element when a new page is displayed. Disabled on mobile.
+ * @param {boolean} [config.outlined=false] Show the outline. The outline is used to navigate through the pages of the booklet.
+ * @param {boolean} [config.editable=false] Show controls for adding, removing and reordering pages
+ */
+OO.ui.BookletLayout = function OoUiBookletLayout( config ) {
+	// Configuration initialization
+	config = config || {};
+
+	// Parent constructor
+	OO.ui.BookletLayout.parent.call( this, config );
+
+	// Properties
+	this.currentPageName = null;
+	this.pages = {};
+	this.ignoreFocus = false;
+	this.stackLayout = new OO.ui.StackLayout( {
+		continuous: !!config.continuous,
+		expanded: this.expanded
+	} );
+	this.$content.append( this.stackLayout.$element );
+	this.autoFocus = config.autoFocus === undefined || !!config.autoFocus;
+	this.outlineVisible = false;
+	this.outlined = !!config.outlined;
+	if ( this.outlined ) {
+		this.editable = !!config.editable;
+		this.outlineControlsWidget = null;
+		this.outlineSelectWidget = new OO.ui.OutlineSelectWidget();
+		this.outlinePanel = new OO.ui.PanelLayout( {
+			expanded: this.expanded,
+			scrollable: true
+		} );
+		this.$menu.append( this.outlinePanel.$element );
+		this.outlineVisible = true;
+		if ( this.editable ) {
+			this.outlineControlsWidget = new OO.ui.OutlineControlsWidget(
+				this.outlineSelectWidget
+			);
+		}
+	}
+	this.toggleMenu( this.outlined );
+
+	// Events
+	this.stackLayout.connect( this, { set: 'onStackLayoutSet' } );
+	if ( this.outlined ) {
+		this.outlineSelectWidget.connect( this, { select: 'onOutlineSelectWidgetSelect' } );
+		this.scrolling = false;
+		this.stackLayout.connect( this, { visibleItemChange: 'onStackLayoutVisibleItemChange' } );
+	}
+	if ( this.autoFocus ) {
+		// Event 'focus' does not bubble, but 'focusin' does
+		this.stackLayout.$element.on( 'focusin', this.onStackLayoutFocus.bind( this ) );
+	}
+
+	// Initialization
+	this.$element.addClass( 'oo-ui-bookletLayout' );
+	this.stackLayout.$element.addClass( 'oo-ui-bookletLayout-stackLayout' );
+	if ( this.outlined ) {
+		this.outlinePanel.$element
+			.addClass( 'oo-ui-bookletLayout-outlinePanel' )
+			.append( this.outlineSelectWidget.$element );
+		if ( this.editable ) {
+			this.outlinePanel.$element
+				.addClass( 'oo-ui-bookletLayout-outlinePanel-editable' )
+				.append( this.outlineControlsWidget.$element );
+		}
+	}
+};
+
+/* Setup */
+
+OO.inheritClass( OO.ui.BookletLayout, OO.ui.MenuLayout );
+
+/* Events */
+
+/**
+ * A 'set' event is emitted when a page is {@link #setPage set} to be displayed by the booklet layout.
+ * @event set
+ * @param {OO.ui.PageLayout} page Current page
+ */
+
+/**
+ * An 'add' event is emitted when pages are {@link #addPages added} to the booklet layout.
+ *
+ * @event add
+ * @param {OO.ui.PageLayout[]} page Added pages
+ * @param {number} index Index pages were added at
+ */
+
+/**
+ * A 'remove' event is emitted when pages are {@link #clearPages cleared} or
+ * {@link #removePages removed} from the booklet.
+ *
+ * @event remove
+ * @param {OO.ui.PageLayout[]} pages Removed pages
+ */
+
+/* Methods */
+
+/**
+ * Handle stack layout focus.
+ *
+ * @private
+ * @param {jQuery.Event} e Focusin event
+ */
+OO.ui.BookletLayout.prototype.onStackLayoutFocus = function ( e ) {
+	var name, $target;
+
+	// Find the page that an element was focused within
+	$target = $( e.target ).closest( '.oo-ui-pageLayout' );
+	for ( name in this.pages ) {
+		// Check for page match, exclude current page to find only page changes
+		if ( this.pages[ name ].$element[ 0 ] === $target[ 0 ] &amp;&amp; name !== this.currentPageName ) {
+			this.setPage( name );
+			break;
+		}
+	}
+};
+
+/**
+ * Handle visibleItemChange events from the stackLayout
+ *
+ * The next visible page is set as the current page by selecting it
+ * in the outline
+ *
+ * @param {OO.ui.PageLayout} page The next visible page in the layout
+ */
+OO.ui.BookletLayout.prototype.onStackLayoutVisibleItemChange = function ( page ) {
+	// Set a flag to so that the resulting call to #onStackLayoutSet doesn't
+	// try and scroll the item into view again.
+	this.scrolling = true;
+	this.outlineSelectWidget.selectItemByData( page.getName() );
+	this.scrolling = false;
+};
+
+/**
+ * Handle stack layout set events.
+ *
+ * @private
+ * @param {OO.ui.PanelLayout|null} page The page panel that is now the current panel
+ */
+OO.ui.BookletLayout.prototype.onStackLayoutSet = function ( page ) {
+	var promise, layout = this;
+	// If everything is unselected, do nothing
+	if ( !page ) {
+		return;
+	}
+	// For continuous BookletLayouts, scroll the selected page into view first
+	if ( this.stackLayout.continuous &amp;&amp; !this.scrolling ) {
+		promise = page.scrollElementIntoView();
+	} else {
+		promise = $.Deferred().resolve();
+	}
+	// Focus the first element on the newly selected panel
+	if ( this.autoFocus &amp;&amp; !OO.ui.isMobile() ) {
+		promise.done( function () {
+			layout.focus();
+		} );
+	}
+};
+
+/**
+ * Focus the first input in the current page.
+ *
+ * If no page is selected, the first selectable page will be selected.
+ * If the focus is already in an element on the current page, nothing will happen.
+ *
+ * @param {number} [itemIndex] A specific item to focus on
+ */
+OO.ui.BookletLayout.prototype.focus = function ( itemIndex ) {
+	var page,
+		items = this.stackLayout.getItems();
+
+	if ( itemIndex !== undefined &amp;&amp; items[ itemIndex ] ) {
+		page = items[ itemIndex ];
+	} else {
+		page = this.stackLayout.getCurrentItem();
+	}
+
+	if ( !page &amp;&amp; this.outlined ) {
+		this.selectFirstSelectablePage();
+		page = this.stackLayout.getCurrentItem();
+	}
+	if ( !page ) {
+		return;
+	}
+	// Only change the focus if is not already in the current page
+	if ( !OO.ui.contains( page.$element[ 0 ], this.getElementDocument().activeElement, true ) ) {
+		page.focus();
+	}
+};
+
+/**
+ * Find the first focusable input in the booklet layout and focus
+ * on it.
+ */
+OO.ui.BookletLayout.prototype.focusFirstFocusable = function () {
+	OO.ui.findFocusable( this.stackLayout.$element ).focus();
+};
+
+/**
+ * Handle outline widget select events.
+ *
+ * @private
+ * @param {OO.ui.OptionWidget|null} item Selected item
+ */
+OO.ui.BookletLayout.prototype.onOutlineSelectWidgetSelect = function ( item ) {
+	if ( item ) {
+		this.setPage( item.getData() );
+	}
+};
+
+/**
+ * Check if booklet has an outline.
+ *
+ * @return {boolean} Booklet has an outline
+ */
+OO.ui.BookletLayout.prototype.isOutlined = function () {
+	return this.outlined;
+};
+
+/**
+ * Check if booklet has editing controls.
+ *
+ * @return {boolean} Booklet is editable
+ */
+OO.ui.BookletLayout.prototype.isEditable = function () {
+	return this.editable;
+};
+
+/**
+ * Check if booklet has a visible outline.
+ *
+ * @return {boolean} Outline is visible
+ */
+OO.ui.BookletLayout.prototype.isOutlineVisible = function () {
+	return this.outlined &amp;&amp; this.outlineVisible;
+};
+
+/**
+ * Hide or show the outline.
+ *
+ * @param {boolean} [show] Show outline, omit to invert current state
+ * @chainable
+ */
+OO.ui.BookletLayout.prototype.toggleOutline = function ( show ) {
+	var booklet = this;
+
+	if ( this.outlined ) {
+		show = show === undefined ? !this.outlineVisible : !!show;
+		this.outlineVisible = show;
+		this.toggleMenu( show );
+		if ( show &amp;&amp; this.editable ) {
+			// HACK: Kill dumb scrollbars when the sidebar stops animating, see T161798. Only necessary when
+			// outline controls are present, delay matches transition on `.oo-ui-menuLayout-menu`.
+			setTimeout( function () {
+				OO.ui.Element.static.reconsiderScrollbars( booklet.outlinePanel.$element[ 0 ] );
+			}, 200 );
+		}
+	}
+
+	return this;
+};
+
+/**
+ * Find the page closest to the specified page.
+ *
+ * @param {OO.ui.PageLayout} page Page to use as a reference point
+ * @return {OO.ui.PageLayout|null} Page closest to the specified page
+ */
+OO.ui.BookletLayout.prototype.findClosestPage = function ( page ) {
+	var next, prev, level,
+		pages = this.stackLayout.getItems(),
+		index = pages.indexOf( page );
+
+	if ( index !== -1 ) {
+		next = pages[ index + 1 ];
+		prev = pages[ index - 1 ];
+		// Prefer adjacent pages at the same level
+		if ( this.outlined ) {
+			level = this.outlineSelectWidget.findItemFromData( page.getName() ).getLevel();
+			if (
+				prev &amp;&amp;
+				level === this.outlineSelectWidget.findItemFromData( prev.getName() ).getLevel()
+			) {
+				return prev;
+			}
+			if (
+				next &amp;&amp;
+				level === this.outlineSelectWidget.findItemFromData( next.getName() ).getLevel()
+			) {
+				return next;
+			}
+		}
+	}
+	return prev || next || null;
+};
+
+/**
+ * Get the outline widget.
+ *
+ * If the booklet is not outlined, the method will return `null`.
+ *
+ * @return {OO.ui.OutlineSelectWidget|null} Outline widget, or null if the booklet is not outlined
+ */
+OO.ui.BookletLayout.prototype.getOutline = function () {
+	return this.outlineSelectWidget;
+};
+
+/**
+ * Get the outline controls widget.
+ *
+ * If the outline is not editable, the method will return `null`.
+ *
+ * @return {OO.ui.OutlineControlsWidget|null} The outline controls widget.
+ */
+OO.ui.BookletLayout.prototype.getOutlineControls = function () {
+	return this.outlineControlsWidget;
+};
+
+/**
+ * Get a page by its symbolic name.
+ *
+ * @param {string} name Symbolic name of page
+ * @return {OO.ui.PageLayout|undefined} Page, if found
+ */
+OO.ui.BookletLayout.prototype.getPage = function ( name ) {
+	return this.pages[ name ];
+};
+
+/**
+ * Get the current page.
+ *
+ * @return {OO.ui.PageLayout|undefined} Current page, if found
+ */
+OO.ui.BookletLayout.prototype.getCurrentPage = function () {
+	var name = this.getCurrentPageName();
+	return name ? this.getPage( name ) : undefined;
+};
+
+/**
+ * Get the symbolic name of the current page.
+ *
+ * @return {string|null} Symbolic name of the current page
+ */
+OO.ui.BookletLayout.prototype.getCurrentPageName = function () {
+	return this.currentPageName;
+};
+
+/**
+ * Add pages to the booklet layout
+ *
+ * When pages are added with the same names as existing pages, the existing pages will be
+ * automatically removed before the new pages are added.
+ *
+ * @param {OO.ui.PageLayout[]} pages Pages to add
+ * @param {number} index Index of the insertion point
+ * @fires add
+ * @chainable
+ */
+OO.ui.BookletLayout.prototype.addPages = function ( pages, index ) {
+	var i, len, name, page, item, currentIndex,
+		stackLayoutPages = this.stackLayout.getItems(),
+		remove = [],
+		items = [];
+
+	// Remove pages with same names
+	for ( i = 0, len = pages.length; i &lt; len; i++ ) {
+		page = pages[ i ];
+		name = page.getName();
+
+		if ( Object.prototype.hasOwnProperty.call( this.pages, name ) ) {
+			// Correct the insertion index
+			currentIndex = stackLayoutPages.indexOf( this.pages[ name ] );
+			if ( currentIndex !== -1 &amp;&amp; currentIndex + 1 &lt; index ) {
+				index--;
+			}
+			remove.push( this.pages[ name ] );
+		}
+	}
+	if ( remove.length ) {
+		this.removePages( remove );
+	}
+
+	// Add new pages
+	for ( i = 0, len = pages.length; i &lt; len; i++ ) {
+		page = pages[ i ];
+		name = page.getName();
+		this.pages[ page.getName() ] = page;
+		if ( this.outlined ) {
+			item = new OO.ui.OutlineOptionWidget( { data: name } );
+			page.setOutlineItem( item );
+			items.push( item );
+		}
+	}
+
+	if ( this.outlined &amp;&amp; items.length ) {
+		this.outlineSelectWidget.addItems( items, index );
+		this.selectFirstSelectablePage();
+	}
+	this.stackLayout.addItems( pages, index );
+	this.emit( 'add', pages, index );
+
+	return this;
+};
+
+/**
+ * Remove the specified pages from the booklet layout.
+ *
+ * To remove all pages from the booklet, you may wish to use the #clearPages method instead.
+ *
+ * @param {OO.ui.PageLayout[]} pages An array of pages to remove
+ * @fires remove
+ * @chainable
+ */
+OO.ui.BookletLayout.prototype.removePages = function ( pages ) {
+	var i, len, name, page,
+		items = [];
+
+	for ( i = 0, len = pages.length; i &lt; len; i++ ) {
+		page = pages[ i ];
+		name = page.getName();
+		delete this.pages[ name ];
+		if ( this.outlined ) {
+			items.push( this.outlineSelectWidget.findItemFromData( name ) );
+			page.setOutlineItem( null );
+		}
+	}
+	if ( this.outlined &amp;&amp; items.length ) {
+		this.outlineSelectWidget.removeItems( items );
+		this.selectFirstSelectablePage();
+	}
+	this.stackLayout.removeItems( pages );
+	this.emit( 'remove', pages );
+
+	return this;
+};
+
+/**
+ * Clear all pages from the booklet layout.
+ *
+ * To remove only a subset of pages from the booklet, use the #removePages method.
+ *
+ * @fires remove
+ * @chainable
+ */
+OO.ui.BookletLayout.prototype.clearPages = function () {
+	var i, len,
+		pages = this.stackLayout.getItems();
+
+	this.pages = {};
+	this.currentPageName = null;
+	if ( this.outlined ) {
+		this.outlineSelectWidget.clearItems();
+		for ( i = 0, len = pages.length; i &lt; len; i++ ) {
+			pages[ i ].setOutlineItem( null );
+		}
+	}
+	this.stackLayout.clearItems();
+
+	this.emit( 'remove', pages );
+
+	return this;
+};
+
+/**
+ * Set the current page by symbolic name.
+ *
+ * @fires set
+ * @param {string} name Symbolic name of page
+ */
+OO.ui.BookletLayout.prototype.setPage = function ( name ) {
+	var selectedItem,
+		$focused,
+		page = this.pages[ name ],
+		previousPage = this.currentPageName &amp;&amp; this.pages[ this.currentPageName ];
+
+	if ( name !== this.currentPageName ) {
+		if ( this.outlined ) {
+			selectedItem = this.outlineSelectWidget.getSelectedItem();
+			if ( selectedItem &amp;&amp; selectedItem.getData() !== name ) {
+				this.outlineSelectWidget.selectItemByData( name );
+			}
+		}
+		if ( page ) {
+			if ( previousPage ) {
+				previousPage.setActive( false );
+				// Blur anything focused if the next page doesn't have anything focusable.
+				// This is not needed if the next page has something focusable (because once it is focused
+				// this blur happens automatically). If the layout is non-continuous, this check is
+				// meaningless because the next page is not visible yet and thus can't hold focus.
+				if (
+					this.autoFocus &amp;&amp;
+					!OO.ui.isMobile() &amp;&amp;
+					this.stackLayout.continuous &amp;&amp;
+					OO.ui.findFocusable( page.$element ).length !== 0
+				) {
+					$focused = previousPage.$element.find( ':focus' );
+					if ( $focused.length ) {
+						$focused[ 0 ].blur();
+					}
+				}
+			}
+			this.currentPageName = name;
+			page.setActive( true );
+			this.stackLayout.setItem( page );
+			if ( !this.stackLayout.continuous &amp;&amp; previousPage ) {
+				// This should not be necessary, since any inputs on the previous page should have been
+				// blurred when it was hidden, but browsers are not very consistent about this.
+				$focused = previousPage.$element.find( ':focus' );
+				if ( $focused.length ) {
+					$focused[ 0 ].blur();
+				}
+			}
+			this.emit( 'set', page );
+		}
+	}
+};
+
+/**
+ * Select the first selectable page.
+ *
+ * @chainable
+ */
+OO.ui.BookletLayout.prototype.selectFirstSelectablePage = function () {
+	if ( !this.outlineSelectWidget.getSelectedItem() ) {
+		this.outlineSelectWidget.selectItem( this.outlineSelectWidget.findFirstSelectableItem() );
+	}
+
+	return this;
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="OO.ui.html">ui</a></li><li><a href="OO.ui.ActionFieldLayout.html">ActionFieldLayout</a></li><li><a href="OO.ui.ActionSet.html">ActionSet</a></li><li><a href="OO.ui.ActionWidget.html">ActionWidget</a></li><li><a href="OO.ui.ApexTheme.html">ApexTheme</a></li><li><a href="OO.ui.BarToolGroup.html">BarToolGroup</a></li><li><a href="OO.ui.BlankTheme.html">BlankTheme</a></li><li><a href="OO.ui.BookletLayout.html">BookletLayout</a></li><li><a href="OO.ui.ButtonGroupWidget.html">ButtonGroupWidget</a></li><li><a href="OO.ui.ButtonInputWidget.html">ButtonInputWidget</a></li><li><a href="OO.ui.ButtonOptionWidget.html">ButtonOptionWidget</a></li><li><a href="OO.ui.ButtonSelectWidget.html">ButtonSelectWidget</a></li><li><a href="OO.ui.ButtonWidget.html">ButtonWidget</a></li><li><a href="OO.ui.CapsuleItemWidget.html">CapsuleItemWidget</a></li><li><a href="OO.ui.CapsuleMultiselectWidget.html">CapsuleMultiselectWidget</a></li><li><a href="OO.ui.CheckboxInputWidget.html">CheckboxInputWidget</a></li><li><a href="OO.ui.CheckboxMultioptionWidget.html">CheckboxMultioptionWidget</a></li><li><a href="OO.ui.CheckboxMultiselectInputWidget.html">CheckboxMultiselectInputWidget</a></li><li><a href="OO.ui.CheckboxMultiselectWidget.html">CheckboxMultiselectWidget</a></li><li><a href="OO.ui.ComboBoxInputWidget.html">ComboBoxInputWidget</a></li><li><a href="OO.ui.DecoratedOptionWidget.html">DecoratedOptionWidget</a></li><li><a href="OO.ui.Dialog.html">Dialog</a></li><li><a href="OO.ui.DropdownInputWidget.html">DropdownInputWidget</a></li><li><a href="OO.ui.DropdownWidget.html">DropdownWidget</a></li><li><a href="OO.ui.Element.html">Element</a></li><li><a href="OO.ui.Error.html">Error</a></li><li><a href="OO.ui.FieldLayout.html">FieldLayout</a></li><li><a href="OO.ui.FieldsetLayout.html">FieldsetLayout</a></li><li><a href="OO.ui.FormLayout.html">FormLayout</a></li><li><a href="OO.ui.HiddenInputWidget.html">HiddenInputWidget</a></li><li><a href="OO.ui.HorizontalLayout.html">HorizontalLayout</a></li><li><a href="OO.ui.HtmlSnippet.html">HtmlSnippet</a></li><li><a href="OO.ui.IconWidget.html">IconWidget</a></li><li><a href="OO.ui.IndexLayout.html">IndexLayout</a></li><li><a href="OO.ui.IndicatorWidget.html">IndicatorWidget</a></li><li><a href="OO.ui.InputWidget.html">InputWidget</a></li><li><a href="OO.ui.LabelWidget.html">LabelWidget</a></li><li><a href="OO.ui.Layout.html">Layout</a></li><li><a href="OO.ui.ListToolGroup.html">ListToolGroup</a></li><li><a href="OO.ui.MenuLayout.html">MenuLayout</a></li><li><a href="OO.ui.MenuOptionWidget.html">MenuOptionWidget</a></li><li><a href="OO.ui.MenuSectionOptionWidget.html">MenuSectionOptionWidget</a></li><li><a href="OO.ui.MenuSelectWidget.html">MenuSelectWidget</a></li><li><a href="OO.ui.MenuTagMultiselectWidget.html">MenuTagMultiselectWidget</a></li><li><a href="OO.ui.MenuToolGroup.html">MenuToolGroup</a></li><li><a href="OO.ui.MessageDialog.html">MessageDialog</a></li><li><a href="OO.ui.mixin.html">mixin</a></li><li><a href="OO.ui.MultilineTextInputWidget.html">MultilineTextInputWidget</a></li><li><a href="OO.ui.MultioptionWidget.html">MultioptionWidget</a></li><li><a href="OO.ui.MultiselectWidget.html">MultiselectWidget</a></li><li><a href="OO.ui.NumberInputWidget.html">NumberInputWidget</a></li><li><a href="OO.ui.OptionWidget.html">OptionWidget</a></li><li><a href="OO.ui.OutlineControlsWidget.html">OutlineControlsWidget</a></li><li><a href="OO.ui.OutlineOptionWidget.html">OutlineOptionWidget</a></li><li><a href="OO.ui.OutlineSelectWidget.html">OutlineSelectWidget</a></li><li><a href="OO.ui.PageLayout.html">PageLayout</a></li><li><a href="OO.ui.PanelLayout.html">PanelLayout</a></li><li><a href="OO.ui.PopupButtonWidget.html">PopupButtonWidget</a></li><li><a href="OO.ui.PopupTagMultiselectWidget.html">PopupTagMultiselectWidget</a></li><li><a href="OO.ui.PopupTool.html">PopupTool</a></li><li><a href="OO.ui.PopupToolGroup.html">PopupToolGroup</a></li><li><a href="OO.ui.PopupWidget.html">PopupWidget</a></li><li><a href="OO.ui.Process.html">Process</a></li><li><a href="OO.ui.ProcessDialog.html">ProcessDialog</a></li><li><a href="OO.ui.ProgressBarWidget.html">ProgressBarWidget</a></li><li><a href="OO.ui.RadioInputWidget.html">RadioInputWidget</a></li><li><a href="OO.ui.RadioOptionWidget.html">RadioOptionWidget</a></li><li><a href="OO.ui.RadioSelectInputWidget.html">RadioSelectInputWidget</a></li><li><a href="OO.ui.RadioSelectWidget.html">RadioSelectWidget</a></li><li><a href="OO.ui.SearchInputWidget.html">SearchInputWidget</a></li><li><a href="OO.ui.SearchWidget.html">SearchWidget</a></li><li><a href="OO.ui.SelectFileWidget.html">SelectFileWidget</a></li><li><a href="OO.ui.SelectWidget.html">SelectWidget</a></li><li><a href="OO.ui.StackLayout.html">StackLayout</a></li><li><a href="OO.ui.TabOptionWidget.html">TabOptionWidget</a></li><li><a href="OO.ui.TabPanelLayout.html">TabPanelLayout</a></li><li><a href="OO.ui.TabSelectWidget.html">TabSelectWidget</a></li><li><a href="OO.ui.TagItemWidget.html">TagItemWidget</a></li><li><a href="OO.ui.TagMultiselectWidget.html">TagMultiselectWidget</a></li><li><a href="OO.ui.TextInputWidget.html">TextInputWidget</a></li><li><a href="OO.ui.Theme.html">Theme</a></li><li><a href="OO.ui.ToggleButtonWidget.html">ToggleButtonWidget</a></li><li><a href="OO.ui.ToggleSwitchWidget.html">ToggleSwitchWidget</a></li><li><a href="OO.ui.ToggleWidget.html">ToggleWidget</a></li><li><a href="OO.ui.Tool.html">Tool</a></li><li><a href="OO.ui.Toolbar.html">Toolbar</a></li><li><a href="OO.ui.ToolFactory.html">ToolFactory</a></li><li><a href="OO.ui.ToolGroup.html">ToolGroup</a></li><li><a href="OO.ui.ToolGroupFactory.html">ToolGroupFactory</a></li><li><a href="OO.ui.ToolGroupTool.html">ToolGroupTool</a></li><li><a href="OO.ui.Widget.html">Widget</a></li><li><a href="OO.ui.WikimediaUITheme.html">WikimediaUITheme</a></li><li><a href="OO.ui.Window.html">Window</a></li><li><a href="OO.ui.WindowInstance.html">WindowInstance</a></li><li><a href="OO.ui.WindowManager.html">WindowManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:changeAchangeeventisemittedwhentheon/offstateofthetogglechanges.">change
+
+A change event is emitted when the on/off state of the toggle changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhentheselectedstateoftheoptionchanges.">change
+
+A change event is emitted when the selected state of the option changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofitemschanges,oranitemisselectedordeselected.">change
+
+A change event is emitted when the set of items changes, or an item is selected or deselected.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofselecteditemschanges.">change
+
+A change event is emitted when the set of selected items changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthevalueoftheinputchanges.">change
+
+A change event is emitted when the value of the input changes.</a></li><li><a href="global.html#event:dragendAdragendeventisemittedwhentheuserdragsanitemandreleasesthemouse,thusterminatingthedragoperation.">dragend
+A dragend event is emitted when the user drags an item and releases the mouse,
+thus terminating the drag operation.</a></li><li><a href="global.html#event:dragstartAdragstarteventisemittedwhentheuserclicksandbeginsdragginganitem.">dragstart
+
+A dragstart event is emitted when the user clicks and begins dragging an item.</a></li><li><a href="global.html#event:dropAdropeventisemittedwhentheuserdragsanitemandthenreleasesthemousebuttonoveravalidtarget.">drop
+A drop event is emitted when the user drags an item and then releases the mouse button
+over a valid target.</a></li><li><a href="global.html#event:active">active</a></li><li><a href="global.html#event:add">add</a></li><li><a href="global.html#event:change">change</a></li><li><a href="global.html#event:click">click</a></li><li><a href="global.html#event:closing">closing</a></li><li><a href="global.html#event:disable">disable</a></li><li><a href="global.html#event:drag">drag</a></li><li><a href="global.html#event:draggable">draggable</a></li><li><a href="global.html#event:enter">enter</a></li><li><a href="global.html#event:labelChange">labelChange</a></li><li><a href="global.html#event:move">move</a></li><li><a href="global.html#event:navigate">navigate</a></li><li><a href="global.html#event:opening">opening</a></li><li><a href="global.html#event:remove">remove</a></li><li><a href="global.html#event:reorder">reorder</a></li><li><a href="global.html#event:resize">resize</a></li><li><a href="global.html#event:set">set</a></li><li><a href="global.html#event:submit">submit</a></li><li><a href="global.html#event:toggle">toggle</a></li><li><a href="global.html#event:update">update</a></li><li><a href="global.html#event:valid">valid</a></li><li><a href="global.html#event:visibleItemChange">visibleItemChange</a></li><li><a href="global.html#event:flagAflageventisemittedwhenthe#clearFlagsor#setFlagsmethodsareused.The%2560changes%2560parametercontainsthenameofeachmodifiedflagandindicateswhetheritwasaddedorremoved.">flag
+A flag event is emitted when the #clearFlags or #setFlags methods are used. The `changes`
+parameter contains the name of each modified flag and indicates whether it was
+added or removed.</a></li><li><a href="OO.ui.ButtonElement.html#event:click">click</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.SelectWidget.html#event:add">add</a></li><li><a href="OO.ui.SelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.SelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.SelectWidget.html#event:press">press</a></li><li><a href="OO.ui.SelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.SelectWidget.html#event:select">select</a></li><li><a href="OO.ui.TabSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.TabSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.TabSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.TabSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.TabSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.TabSelectWidget.html#event:select">select</a></li><li><a href="global.html#event:readyThemenuisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The menu is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:readyThepopupisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The popup is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:removeAremoveactionwasperformedontheitem">remove
+
+A remove action was performed on the item</a></li><li><a href="global.html#event:resizeAresizeeventisemittedwhenthewidget'sdimensionschangetoaccomodatenewlyaddeditemsorcurrentuserinput.">resize
+
+A resize event is emitted when the widget's dimensions change to accomodate newly added items or
+current user input.</a></li><li><a href="global.html#event:selectAselecteventisemittedwhenanitemisselectedordeselected.">select
+
+A select event is emitted when an item is selected or deselected.</a></li><li><a href="global.html#event:selectThetagwidgetwasselected.Thiscanoccurwhenthewidgetiseitherclickedorenterwaspressedonit.">select
+
+The tag widget was selected. This can occur when the widget
+is either clicked or enter was pressed on it.</a></li><li><a href="global.html#event:updateStateAn'updateState'eventmustbeemittedontheToolbar(bycalling%2560toolbar.emit('updateState')%2560)everytimethestateoftheapplicationusingthetoolbarchanges,andanupdatetothestateoftoolsisrequired.">updateState
+
+An 'updateState' event must be emitted on the Toolbar (by calling `toolbar.emit( 'updateState' )`)
+every time the state of the application using the toolbar changes, and an update to the state of
+tools is required.</a></li></ul><h3>Mixins</h3><ul><li><a href="OO.ui.mixin.AccessKeyedElement.html">AccessKeyedElement</a></li><li><a href="OO.ui.mixin.ButtonElement.html">ButtonElement</a></li><li><a href="OO.ui.mixin.ClippableElement.html">ClippableElement</a></li><li><a href="OO.ui.mixin.DraggableElement.html">DraggableElement</a></li><li><a href="OO.ui.mixin.DraggableGroupElement.html">DraggableGroupElement</a></li><li><a href="OO.ui.mixin.FlaggedElement.html">FlaggedElement</a></li><li><a href="OO.ui.mixin.FloatableElement.html">FloatableElement</a></li><li><a href="OO.ui.mixin.GroupElement.html">GroupElement</a></li><li><a href="OO.ui.mixin.GroupWidget.html">GroupWidget</a></li><li><a href="OO.ui.mixin.IconElement.html">IconElement</a></li><li><a href="OO.ui.mixin.IndicatorElement.html">IndicatorElement</a></li><li><a href="OO.ui.mixin.LabelElement.html">LabelElement</a></li><li><a href="OO.ui.mixin.LookupElement.html">LookupElement</a></li><li><a href="OO.ui.mixin.PendingElement.html">PendingElement</a></li><li><a href="OO.ui.mixin.PopupElement.html">PopupElement</a></li><li><a href="OO.ui.mixin.RequestManager.html">RequestManager</a></li><li><a href="OO.ui.mixin.TabIndexedElement.html">TabIndexedElement</a></li><li><a href="OO.ui.mixin.TitledElement.html">TitledElement</a></li></ul><h3>Global</h3><ul><li><a href="global.html#isActive">isActive</a></li><li><a href="global.html#setActive">setActive</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Jan 11 2018 12:31:36 GMT+0530 (IST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

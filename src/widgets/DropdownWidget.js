@@ -40,16 +40,16 @@
  *
  * @class
  * @extends OO.ui.Widget
- * @mixins OO.ui.mixin.IconElement
- * @mixins OO.ui.mixin.IndicatorElement
- * @mixins OO.ui.mixin.LabelElement
- * @mixins OO.ui.mixin.TitledElement
- * @mixins OO.ui.mixin.TabIndexedElement
+ * @mixes OO.ui.mixin.IconElement
+ * @mixes OO.ui.mixin.IndicatorElement
+ * @mixes OO.ui.mixin.LabelElement
+ * @mixes OO.ui.mixin.TitledElement
+ * @mixes OO.ui.mixin.TabIndexedElement
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {Object} [menu] Configuration options to pass to {@link OO.ui.MenuSelectWidget menu select widget}
- * @cfg {jQuery} [$overlay] Render the menu into a separate layer. This configuration is useful in cases where
+ * @param {Object} [config.menu] Configuration options to pass to {@link OO.ui.MenuSelectWidget menu select widget}
+ * @param {jQuery} [config.$overlay] Render the menu into a separate layer. This configuration is useful in cases where
  *  the expanded menu is larger than its containing `<div>`. The specified overlay layer is usually on top of the
  *  containing `<div>` and has a larger area. By default, the menu uses relative positioning.
  *  See <https://www.mediawiki.org/wiki/OOjs_UI/Concepts#Overlays>.

@@ -268,17 +268,17 @@
  *
  * @class
  * @extends OO.ui.Element
- * @mixins OO.EventEmitter
- * @mixins OO.ui.mixin.GroupElement
+ * @mixes OO.EventEmitter
+ * @mixes OO.ui.mixin.GroupElement
  *
  * @constructor
  * @param {OO.ui.ToolFactory} toolFactory Factory for creating tools
  * @param {OO.ui.ToolGroupFactory} toolGroupFactory Factory for creating toolgroups
  * @param {Object} [config] Configuration options
- * @cfg {boolean} [actions] Add an actions section to the toolbar. Actions are commands that are included
+ * @param {boolean} [config.actions] Add an actions section to the toolbar. Actions are commands that are included
  *  in the toolbar, but are not configured as tools. By default, actions are displayed on the right side of
  *  the toolbar.
- * @cfg {string} [position='top'] Whether the toolbar is positioned above ('top') or below ('bottom') content.
+ * @param {string} [config.position='top'] Whether the toolbar is positioned above ('top') or below ('bottom') content.
  */
 OO.ui.Toolbar = function OoUiToolbar( toolFactory, toolGroupFactory, config ) {
 	// Allow passing positional parameters inside the config object

@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: widgets/TextInputWidget.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: widgets/TextInputWidget.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * TextInputWidgets, like HTML text inputs, can be configured with options that customize the
+ * size of the field as well as its presentation. In addition, these widgets can be configured
+ * with {@link OO.ui.mixin.IconElement icons}, {@link OO.ui.mixin.IndicatorElement indicators}, an optional
+ * validation-pattern (used to determine if an input value is valid or not) and an input filter,
+ * which modifies incoming values rather than validating them.
+ * Please see the [OOjs UI documentation on MediaWiki] [1] for more information and examples.
+ *
+ * This widget can be used inside an HTML form, such as a OO.ui.FormLayout.
+ *
+ *     @example
+ *     // Example of a text input widget
+ *     var textInput = new OO.ui.TextInputWidget( {
+ *         value: 'Text input'
+ *     } )
+ *     $( 'body' ).append( textInput.$element );
+ *
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Inputs
+ *
+ * @class
+ * @extends OO.ui.InputWidget
+ * @mixes OO.ui.mixin.IconElement
+ * @mixes OO.ui.mixin.IndicatorElement
+ * @mixes OO.ui.mixin.PendingElement
+ * @mixes OO.ui.mixin.LabelElement
+ *
+ * @constructor
+ * @param {Object} [config] Configuration options
+ * @param {string} [config.type='text'] The value of the HTML `type` attribute: 'text', 'password'
+ *  'email', 'url' or 'number'.
+ * @param {string} [config.placeholder] Placeholder text
+ * @param {boolean} [config.autofocus=false] Use an HTML `autofocus` attribute to
+ *  instruct the browser to focus this widget.
+ * @param {boolean} [config.readOnly=false] Prevent changes to the value of the text input.
+ * @param {number} [config.maxLength] Maximum number of characters allowed in the input.
+ * @param {string} [config.labelPosition='after'] The position of the inline label relative to that of
+ *  the value or placeholder text: `'before'` or `'after'`
+ * @param {boolean} [config.required=false] Mark the field as required. Implies `indicator: 'required'`.
+ * @param {boolean} [config.autocomplete=true] Should the browser support autocomplete for this field
+ * @param {boolean} [config.spellcheck] Should the browser support spellcheck for this field (`undefined` means
+ *  leaving it up to the browser).
+ * @param {RegExp|Function|string} [config.validate] Validation pattern: when string, a symbolic name of a
+ *  pattern defined by the class: 'non-empty' (the value cannot be an empty string) or 'integer'
+ *  (the value must contain only numbers); when RegExp, a regular expression that must match the
+ *  value for it to be considered valid; when Function, a function receiving the value as parameter
+ *  that must return true, or promise resolving to true, for it to be considered valid.
+ */
+OO.ui.TextInputWidget = function OoUiTextInputWidget( config ) {
+	// Configuration initialization
+	config = $.extend( {
+		type: 'text',
+		labelPosition: 'after'
+	}, config );
+
+	if ( config.multiline ) {
+		OO.ui.warnDeprecation( 'TextInputWidget: config.multiline is deprecated. Use the MultilineTextInputWidget instead. See T130434.' );
+		return new OO.ui.MultilineTextInputWidget( config );
+	}
+
+	// Parent constructor
+	OO.ui.TextInputWidget.parent.call( this, config );
+
+	// Mixin constructors
+	OO.ui.mixin.IconElement.call( this, config );
+	OO.ui.mixin.IndicatorElement.call( this, config );
+	OO.ui.mixin.PendingElement.call( this, $.extend( {}, config, { $pending: this.$input } ) );
+	OO.ui.mixin.LabelElement.call( this, config );
+
+	// Properties
+	this.type = this.getSaneType( config );
+	this.readOnly = false;
+	this.required = false;
+	this.validate = null;
+	this.styleHeight = null;
+	this.scrollWidth = null;
+
+	this.setValidation( config.validate );
+	this.setLabelPosition( config.labelPosition );
+
+	// Events
+	this.$input.on( {
+		keypress: this.onKeyPress.bind( this ),
+		blur: this.onBlur.bind( this ),
+		focus: this.onFocus.bind( this )
+	} );
+	this.$icon.on( 'mousedown', this.onIconMouseDown.bind( this ) );
+	this.$indicator.on( 'mousedown', this.onIndicatorMouseDown.bind( this ) );
+	this.on( 'labelChange', this.updatePosition.bind( this ) );
+	this.on( 'change', OO.ui.debounce( this.onDebouncedChange.bind( this ), 250 ) );
+
+	// Initialization
+	this.$element
+		.addClass( 'oo-ui-textInputWidget oo-ui-textInputWidget-type-' + this.type )
+		.append( this.$icon, this.$indicator );
+	this.setReadOnly( !!config.readOnly );
+	this.setRequired( !!config.required );
+	if ( config.placeholder !== undefined ) {
+		this.$input.attr( 'placeholder', config.placeholder );
+	}
+	if ( config.maxLength !== undefined ) {
+		this.$input.attr( 'maxlength', config.maxLength );
+	}
+	if ( config.autofocus ) {
+		this.$input.attr( 'autofocus', 'autofocus' );
+	}
+	if ( config.autocomplete === false ) {
+		this.$input.attr( 'autocomplete', 'off' );
+		// Turning off autocompletion also disables "form caching" when the user navigates to a
+		// different page and then clicks "Back". Re-enable it when leaving. Borrowed from jQuery UI.
+		$( window ).on( {
+			beforeunload: function () {
+				this.$input.removeAttr( 'autocomplete' );
+			}.bind( this ),
+			pageshow: function () {
+				// Browsers don't seem to actually fire this event on "Back", they instead just reload the
+				// whole page... it shouldn't hurt, though.
+				this.$input.attr( 'autocomplete', 'off' );
+			}.bind( this )
+		} );
+	}
+	if ( config.spellcheck !== undefined ) {
+		this.$input.attr( 'spellcheck', config.spellcheck ? 'true' : 'false' );
+	}
+	if ( this.label ) {
+		this.isWaitingToBeAttached = true;
+		this.installParentChangeDetector();
+	}
+};
+
+/* Setup */
+
+OO.inheritClass( OO.ui.TextInputWidget, OO.ui.InputWidget );
+OO.mixinClass( OO.ui.TextInputWidget, OO.ui.mixin.IconElement );
+OO.mixinClass( OO.ui.TextInputWidget, OO.ui.mixin.IndicatorElement );
+OO.mixinClass( OO.ui.TextInputWidget, OO.ui.mixin.PendingElement );
+OO.mixinClass( OO.ui.TextInputWidget, OO.ui.mixin.LabelElement );
+
+/* Static Properties */
+
+OO.ui.TextInputWidget.static.validationPatterns = {
+	'non-empty': /.+/,
+	integer: /^\d+$/
+};
+
+/* Static Methods */
+
+/**
+ * @inheritdoc
+ */
+OO.ui.TextInputWidget.static.gatherPreInfuseState = function ( node, config ) {
+	var state = OO.ui.TextInputWidget.parent.static.gatherPreInfuseState( node, config );
+	return state;
+};
+
+/* Events */
+
+/**
+ * An `enter` event is emitted when the user presses 'enter' inside the text box.
+ *
+ * @event enter
+ */
+
+/* Methods */
+
+/**
+ * Handle icon mouse down events.
+ *
+ * @private
+ * @param {jQuery.Event} e Mouse down event
+ */
+OO.ui.TextInputWidget.prototype.onIconMouseDown = function ( e ) {
+	if ( e.which === OO.ui.MouseButtons.LEFT ) {
+		this.focus();
+		return false;
+	}
+};
+
+/**
+ * Handle indicator mouse down events.
+ *
+ * @private
+ * @param {jQuery.Event} e Mouse down event
+ */
+OO.ui.TextInputWidget.prototype.onIndicatorMouseDown = function ( e ) {
+	if ( e.which === OO.ui.MouseButtons.LEFT ) {
+		this.focus();
+		return false;
+	}
+};
+
+/**
+ * Handle key press events.
+ *
+ * @private
+ * @param {jQuery.Event} e Key press event
+ * @fires enter If enter key is pressed
+ */
+OO.ui.TextInputWidget.prototype.onKeyPress = function ( e ) {
+	if ( e.which === OO.ui.Keys.ENTER ) {
+		this.emit( 'enter', e );
+	}
+};
+
+/**
+ * Handle blur events.
+ *
+ * @private
+ * @param {jQuery.Event} e Blur event
+ */
+OO.ui.TextInputWidget.prototype.onBlur = function () {
+	this.setValidityFlag();
+};
+
+/**
+ * Handle focus events.
+ *
+ * @private
+ * @param {jQuery.Event} e Focus event
+ */
+OO.ui.TextInputWidget.prototype.onFocus = function () {
+	if ( this.isWaitingToBeAttached ) {
+		// If we've received focus, then we must be attached to the document, and if
+		// isWaitingToBeAttached is still true, that means the handler never fired. Fire it now.
+		this.onElementAttach();
+	}
+	this.setValidityFlag( true );
+};
+
+/**
+ * Handle element attach events.
+ *
+ * @private
+ * @param {jQuery.Event} e Element attach event
+ */
+OO.ui.TextInputWidget.prototype.onElementAttach = function () {
+	this.isWaitingToBeAttached = false;
+	// Any previously calculated size is now probably invalid if we reattached elsewhere
+	this.valCache = null;
+	this.positionLabel();
+};
+
+/**
+ * Handle debounced change events.
+ *
+ * @param {string} value
+ * @private
+ */
+OO.ui.TextInputWidget.prototype.onDebouncedChange = function () {
+	this.setValidityFlag();
+};
+
+/**
+ * Check if the input is {@link #readOnly read-only}.
+ *
+ * @return {boolean}
+ */
+OO.ui.TextInputWidget.prototype.isReadOnly = function () {
+	return this.readOnly;
+};
+
+/**
+ * Set the {@link #readOnly read-only} state of the input.
+ *
+ * @param {boolean} state Make input read-only
+ * @chainable
+ */
+OO.ui.TextInputWidget.prototype.setReadOnly = function ( state ) {
+	this.readOnly = !!state;
+	this.$input.prop( 'readOnly', this.readOnly );
+	return this;
+};
+
+/**
+ * Check if the input is {@link #required required}.
+ *
+ * @return {boolean}
+ */
+OO.ui.TextInputWidget.prototype.isRequired = function () {
+	return this.required;
+};
+
+/**
+ * Set the {@link #required required} state of the input.
+ *
+ * @param {boolean} state Make input required
+ * @chainable
+ */
+OO.ui.TextInputWidget.prototype.setRequired = function ( state ) {
+	this.required = !!state;
+	if ( this.required ) {
+		this.$input
+			.prop( 'required', true )
+			.attr( 'aria-required', 'true' );
+		if ( this.getIndicator() === null ) {
+			this.setIndicator( 'required' );
+		}
+	} else {
+		this.$input
+			.prop( 'required', false )
+			.removeAttr( 'aria-required' );
+		if ( this.getIndicator() === 'required' ) {
+			this.setIndicator( null );
+		}
+	}
+	return this;
+};
+
+/**
+ * Support function for making #onElementAttach work across browsers.
+ *
+ * This whole function could be replaced with one line of code using the DOMNodeInsertedIntoDocument
+ * event, but it's not supported by Firefox and allegedly deprecated, so we only use it as fallback.
+ *
+ * Due to MutationObserver performance woes, #onElementAttach is only somewhat reliably called the
+ * first time that the element gets attached to the documented.
+ */
+OO.ui.TextInputWidget.prototype.installParentChangeDetector = function () {
+	var mutationObserver, onRemove, topmostNode, fakeParentNode,
+		MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver,
+		widget = this;
+
+	if ( MutationObserver ) {
+		// The new way. If only it wasn't so ugly.
+
+		if ( this.isElementAttached() ) {
+			// Widget is attached already, do nothing. This breaks the functionality of this function when
+			// the widget is detached and reattached. Alas, doing this correctly with MutationObserver
+			// would require observation of the whole document, which would hurt performance of other,
+			// more important code.
+			return;
+		}
+
+		// Find topmost node in the tree
+		topmostNode = this.$element[ 0 ];
+		while ( topmostNode.parentNode ) {
+			topmostNode = topmostNode.parentNode;
+		}
+
+		// We have no way to detect the $element being attached somewhere without observing the entire
+		// DOM with subtree modifications, which would hurt performance. So we cheat: we hook to the
+		// parent node of $element, and instead detect when $element is removed from it (and thus
+		// probably attached somewhere else). If there is no parent, we create a "fake" one. If it
+		// doesn't get attached, we end up back here and create the parent.
+
+		mutationObserver = new MutationObserver( function ( mutations ) {
+			var i, j, removedNodes;
+			for ( i = 0; i &lt; mutations.length; i++ ) {
+				removedNodes = mutations[ i ].removedNodes;
+				for ( j = 0; j &lt; removedNodes.length; j++ ) {
+					if ( removedNodes[ j ] === topmostNode ) {
+						setTimeout( onRemove, 0 );
+						return;
+					}
+				}
+			}
+		} );
+
+		onRemove = function () {
+			// If the node was attached somewhere else, report it
+			if ( widget.isElementAttached() ) {
+				widget.onElementAttach();
+			}
+			mutationObserver.disconnect();
+			widget.installParentChangeDetector();
+		};
+
+		// Create a fake parent and observe it
+		fakeParentNode = $( '&lt;div>' ).append( topmostNode )[ 0 ];
+		mutationObserver.observe( fakeParentNode, { childList: true } );
+	} else {
+		// Using the DOMNodeInsertedIntoDocument event is much nicer and less magical, and works for
+		// detachment and reattachment, but it's not supported by Firefox and allegedly deprecated.
+		this.$element.on( 'DOMNodeInsertedIntoDocument', this.onElementAttach.bind( this ) );
+	}
+};
+
+/**
+ * @inheritdoc
+ * @protected
+ */
+OO.ui.TextInputWidget.prototype.getInputElement = function ( config ) {
+	if ( this.getSaneType( config ) === 'number' ) {
+		return $( '&lt;input>' )
+			.attr( 'step', 'any' )
+			.attr( 'type', 'number' );
+	} else {
+		return $( '&lt;input>' ).attr( 'type', this.getSaneType( config ) );
+	}
+};
+
+/**
+ * Get sanitized value for 'type' for given config.
+ *
+ * @param {Object} config Configuration options
+ * @return {string|null}
+ * @protected
+ */
+OO.ui.TextInputWidget.prototype.getSaneType = function ( config ) {
+	var allowedTypes = [
+		'text',
+		'password',
+		'email',
+		'url',
+		'number'
+	];
+	return allowedTypes.indexOf( config.type ) !== -1 ? config.type : 'text';
+};
+
+/**
+ * Focus the input and select a specified range within the text.
+ *
+ * @param {number} from Select from offset
+ * @param {number} [to] Select to offset, defaults to from
+ * @chainable
+ */
+OO.ui.TextInputWidget.prototype.selectRange = function ( from, to ) {
+	var isBackwards, start, end,
+		input = this.$input[ 0 ];
+
+	to = to || from;
+
+	isBackwards = to &lt; from;
+	start = isBackwards ? to : from;
+	end = isBackwards ? from : to;
+
+	this.focus();
+
+	try {
+		input.setSelectionRange( start, end, isBackwards ? 'backward' : 'forward' );
+	} catch ( e ) {
+		// IE throws an exception if you call setSelectionRange on a unattached DOM node.
+		// Rather than expensively check if the input is attached every time, just check
+		// if it was the cause of an error being thrown. If not, rethrow the error.
+		if ( this.getElementDocument().body.contains( input ) ) {
+			throw e;
+		}
+	}
+	return this;
+};
+
+/**
+ * Get an object describing the current selection range in a directional manner
+ *
+ * @return {Object} Object containing 'from' and 'to' offsets
+ */
+OO.ui.TextInputWidget.prototype.getRange = function () {
+	var input = this.$input[ 0 ],
+		start = input.selectionStart,
+		end = input.selectionEnd,
+		isBackwards = input.selectionDirection === 'backward';
+
+	return {
+		from: isBackwards ? end : start,
+		to: isBackwards ? start : end
+	};
+};
+
+/**
+ * Get the length of the text input value.
+ *
+ * This could differ from the length of #getValue if the
+ * value gets filtered
+ *
+ * @return {number} Input length
+ */
+OO.ui.TextInputWidget.prototype.getInputLength = function () {
+	return this.$input[ 0 ].value.length;
+};
+
+/**
+ * Focus the input and select the entire text.
+ *
+ * @chainable
+ */
+OO.ui.TextInputWidget.prototype.select = function () {
+	return this.selectRange( 0, this.getInputLength() );
+};
+
+/**
+ * Focus the input and move the cursor to the start.
+ *
+ * @chainable
+ */
+OO.ui.TextInputWidget.prototype.moveCursorToStart = function () {
+	return this.selectRange( 0 );
+};
+
+/**
+ * Focus the input and move the cursor to the end.
+ *
+ * @chainable
+ */
+OO.ui.TextInputWidget.prototype.moveCursorToEnd = function () {
+	return this.selectRange( this.getInputLength() );
+};
+
+/**
+ * Insert new content into the input.
+ *
+ * @param {string} content Content to be inserted
+ * @chainable
+ */
+OO.ui.TextInputWidget.prototype.insertContent = function ( content ) {
+	var start, end,
+		range = this.getRange(),
+		value = this.getValue();
+
+	start = Math.min( range.from, range.to );
+	end = Math.max( range.from, range.to );
+
+	this.setValue( value.slice( 0, start ) + content + value.slice( end ) );
+	this.selectRange( start + content.length );
+	return this;
+};
+
+/**
+ * Insert new content either side of a selection.
+ *
+ * @param {string} pre Content to be inserted before the selection
+ * @param {string} post Content to be inserted after the selection
+ * @chainable
+ */
+OO.ui.TextInputWidget.prototype.encapsulateContent = function ( pre, post ) {
+	var start, end,
+		range = this.getRange(),
+		offset = pre.length;
+
+	start = Math.min( range.from, range.to );
+	end = Math.max( range.from, range.to );
+
+	this.selectRange( start ).insertContent( pre );
+	this.selectRange( offset + end ).insertContent( post );
+
+	this.selectRange( offset + start, offset + end );
+	return this;
+};
+
+/**
+ * Set the validation pattern.
+ *
+ * The validation pattern is either a regular expression, a function, or the symbolic name of a
+ * pattern defined by the class: 'non-empty' (the value cannot be an empty string) or 'integer' (the
+ * value must contain only numbers).
+ *
+ * @param {RegExp|Function|string|null} validate Regular expression, function, or the symbolic name
+ *  of a pattern (either ‘integer’ or ‘non-empty’) defined by the class.
+ */
+OO.ui.TextInputWidget.prototype.setValidation = function ( validate ) {
+	if ( validate instanceof RegExp || validate instanceof Function ) {
+		this.validate = validate;
+	} else {
+		this.validate = this.constructor.static.validationPatterns[ validate ] || /.*/;
+	}
+};
+
+/**
+ * Sets the 'invalid' flag appropriately.
+ *
+ * @param {boolean} [isValid] Optionally override validation result
+ */
+OO.ui.TextInputWidget.prototype.setValidityFlag = function ( isValid ) {
+	var widget = this,
+		setFlag = function ( valid ) {
+			if ( !valid ) {
+				widget.$input.attr( 'aria-invalid', 'true' );
+			} else {
+				widget.$input.removeAttr( 'aria-invalid' );
+			}
+			widget.setFlags( { invalid: !valid } );
+		};
+
+	if ( isValid !== undefined ) {
+		setFlag( isValid );
+	} else {
+		this.getValidity().then( function () {
+			setFlag( true );
+		}, function () {
+			setFlag( false );
+		} );
+	}
+};
+
+/**
+ * Get the validity of current value.
+ *
+ * This method returns a promise that resolves if the value is valid and rejects if
+ * it isn't. Uses the {@link #validate validation pattern}  to check for validity.
+ *
+ * @return {jQuery.Promise} A promise that resolves if the value is valid, rejects if not.
+ */
+OO.ui.TextInputWidget.prototype.getValidity = function () {
+	var result;
+
+	function rejectOrResolve( valid ) {
+		if ( valid ) {
+			return $.Deferred().resolve().promise();
+		} else {
+			return $.Deferred().reject().promise();
+		}
+	}
+
+	// Check browser validity and reject if it is invalid
+	if (
+		this.$input[ 0 ].checkValidity !== undefined &amp;&amp;
+		this.$input[ 0 ].checkValidity() === false
+	) {
+		return rejectOrResolve( false );
+	}
+
+	// Run our checks if the browser thinks the field is valid
+	if ( this.validate instanceof Function ) {
+		result = this.validate( this.getValue() );
+		if ( result &amp;&amp; $.isFunction( result.promise ) ) {
+			return result.promise().then( function ( valid ) {
+				return rejectOrResolve( valid );
+			} );
+		} else {
+			return rejectOrResolve( result );
+		}
+	} else {
+		return rejectOrResolve( this.getValue().match( this.validate ) );
+	}
+};
+
+/**
+ * Set the position of the inline label relative to that of the value: `‘before’` or `‘after’`.
+ *
+ * @param {string} labelPosition Label position, 'before' or 'after'
+ * @chainable
+ */
+OO.ui.TextInputWidget.prototype.setLabelPosition = function ( labelPosition ) {
+	this.labelPosition = labelPosition;
+	if ( this.label ) {
+		// If there is no label and we only change the position, #updatePosition is a no-op,
+		// but it takes really a lot of work to do nothing.
+		this.updatePosition();
+	}
+	return this;
+};
+
+/**
+ * Update the position of the inline label.
+ *
+ * This method is called by #setLabelPosition, and can also be called on its own if
+ * something causes the label to be mispositioned.
+ *
+ * @chainable
+ */
+OO.ui.TextInputWidget.prototype.updatePosition = function () {
+	var after = this.labelPosition === 'after';
+
+	this.$element
+		.toggleClass( 'oo-ui-textInputWidget-labelPosition-after', !!this.label &amp;&amp; after )
+		.toggleClass( 'oo-ui-textInputWidget-labelPosition-before', !!this.label &amp;&amp; !after );
+
+	this.valCache = null;
+	this.scrollWidth = null;
+	this.positionLabel();
+
+	return this;
+};
+
+/**
+ * Position the label by setting the correct padding on the input.
+ *
+ * @private
+ * @chainable
+ */
+OO.ui.TextInputWidget.prototype.positionLabel = function () {
+	var after, rtl, property, newCss;
+
+	if ( this.isWaitingToBeAttached ) {
+		// #onElementAttach will be called soon, which calls this method
+		return this;
+	}
+
+	newCss = {
+		'padding-right': '',
+		'padding-left': ''
+	};
+
+	if ( this.label ) {
+		this.$element.append( this.$label );
+	} else {
+		this.$label.detach();
+		// Clear old values if present
+		this.$input.css( newCss );
+		return;
+	}
+
+	after = this.labelPosition === 'after';
+	rtl = this.$element.css( 'direction' ) === 'rtl';
+	property = after === rtl ? 'padding-left' : 'padding-right';
+
+	newCss[ property ] = this.$label.outerWidth( true ) + ( after ? this.scrollWidth : 0 );
+	// We have to clear the padding on the other side, in case the element direction changed
+	this.$input.css( newCss );
+
+	return this;
+};
+
+/**
+ * @inheritdoc
+ */
+OO.ui.TextInputWidget.prototype.restorePreInfuseState = function ( state ) {
+	OO.ui.TextInputWidget.parent.prototype.restorePreInfuseState.call( this, state );
+	if ( state.scrollTop !== undefined ) {
+		this.$input.scrollTop( state.scrollTop );
+	}
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="OO.ui.html">ui</a></li><li><a href="OO.ui.ActionFieldLayout.html">ActionFieldLayout</a></li><li><a href="OO.ui.ActionSet.html">ActionSet</a></li><li><a href="OO.ui.ActionWidget.html">ActionWidget</a></li><li><a href="OO.ui.ApexTheme.html">ApexTheme</a></li><li><a href="OO.ui.BarToolGroup.html">BarToolGroup</a></li><li><a href="OO.ui.BlankTheme.html">BlankTheme</a></li><li><a href="OO.ui.BookletLayout.html">BookletLayout</a></li><li><a href="OO.ui.ButtonGroupWidget.html">ButtonGroupWidget</a></li><li><a href="OO.ui.ButtonInputWidget.html">ButtonInputWidget</a></li><li><a href="OO.ui.ButtonOptionWidget.html">ButtonOptionWidget</a></li><li><a href="OO.ui.ButtonSelectWidget.html">ButtonSelectWidget</a></li><li><a href="OO.ui.ButtonWidget.html">ButtonWidget</a></li><li><a href="OO.ui.CapsuleItemWidget.html">CapsuleItemWidget</a></li><li><a href="OO.ui.CapsuleMultiselectWidget.html">CapsuleMultiselectWidget</a></li><li><a href="OO.ui.CheckboxInputWidget.html">CheckboxInputWidget</a></li><li><a href="OO.ui.CheckboxMultioptionWidget.html">CheckboxMultioptionWidget</a></li><li><a href="OO.ui.CheckboxMultiselectInputWidget.html">CheckboxMultiselectInputWidget</a></li><li><a href="OO.ui.CheckboxMultiselectWidget.html">CheckboxMultiselectWidget</a></li><li><a href="OO.ui.ComboBoxInputWidget.html">ComboBoxInputWidget</a></li><li><a href="OO.ui.DecoratedOptionWidget.html">DecoratedOptionWidget</a></li><li><a href="OO.ui.Dialog.html">Dialog</a></li><li><a href="OO.ui.DropdownInputWidget.html">DropdownInputWidget</a></li><li><a href="OO.ui.DropdownWidget.html">DropdownWidget</a></li><li><a href="OO.ui.Element.html">Element</a></li><li><a href="OO.ui.Error.html">Error</a></li><li><a href="OO.ui.FieldLayout.html">FieldLayout</a></li><li><a href="OO.ui.FieldsetLayout.html">FieldsetLayout</a></li><li><a href="OO.ui.FormLayout.html">FormLayout</a></li><li><a href="OO.ui.HiddenInputWidget.html">HiddenInputWidget</a></li><li><a href="OO.ui.HorizontalLayout.html">HorizontalLayout</a></li><li><a href="OO.ui.HtmlSnippet.html">HtmlSnippet</a></li><li><a href="OO.ui.IconWidget.html">IconWidget</a></li><li><a href="OO.ui.IndexLayout.html">IndexLayout</a></li><li><a href="OO.ui.IndicatorWidget.html">IndicatorWidget</a></li><li><a href="OO.ui.InputWidget.html">InputWidget</a></li><li><a href="OO.ui.LabelWidget.html">LabelWidget</a></li><li><a href="OO.ui.Layout.html">Layout</a></li><li><a href="OO.ui.ListToolGroup.html">ListToolGroup</a></li><li><a href="OO.ui.MenuLayout.html">MenuLayout</a></li><li><a href="OO.ui.MenuOptionWidget.html">MenuOptionWidget</a></li><li><a href="OO.ui.MenuSectionOptionWidget.html">MenuSectionOptionWidget</a></li><li><a href="OO.ui.MenuSelectWidget.html">MenuSelectWidget</a></li><li><a href="OO.ui.MenuTagMultiselectWidget.html">MenuTagMultiselectWidget</a></li><li><a href="OO.ui.MenuToolGroup.html">MenuToolGroup</a></li><li><a href="OO.ui.MessageDialog.html">MessageDialog</a></li><li><a href="OO.ui.mixin.html">mixin</a></li><li><a href="OO.ui.MultilineTextInputWidget.html">MultilineTextInputWidget</a></li><li><a href="OO.ui.MultioptionWidget.html">MultioptionWidget</a></li><li><a href="OO.ui.MultiselectWidget.html">MultiselectWidget</a></li><li><a href="OO.ui.NumberInputWidget.html">NumberInputWidget</a></li><li><a href="OO.ui.OptionWidget.html">OptionWidget</a></li><li><a href="OO.ui.OutlineControlsWidget.html">OutlineControlsWidget</a></li><li><a href="OO.ui.OutlineOptionWidget.html">OutlineOptionWidget</a></li><li><a href="OO.ui.OutlineSelectWidget.html">OutlineSelectWidget</a></li><li><a href="OO.ui.PageLayout.html">PageLayout</a></li><li><a href="OO.ui.PanelLayout.html">PanelLayout</a></li><li><a href="OO.ui.PopupButtonWidget.html">PopupButtonWidget</a></li><li><a href="OO.ui.PopupTagMultiselectWidget.html">PopupTagMultiselectWidget</a></li><li><a href="OO.ui.PopupTool.html">PopupTool</a></li><li><a href="OO.ui.PopupToolGroup.html">PopupToolGroup</a></li><li><a href="OO.ui.PopupWidget.html">PopupWidget</a></li><li><a href="OO.ui.Process.html">Process</a></li><li><a href="OO.ui.ProcessDialog.html">ProcessDialog</a></li><li><a href="OO.ui.ProgressBarWidget.html">ProgressBarWidget</a></li><li><a href="OO.ui.RadioInputWidget.html">RadioInputWidget</a></li><li><a href="OO.ui.RadioOptionWidget.html">RadioOptionWidget</a></li><li><a href="OO.ui.RadioSelectInputWidget.html">RadioSelectInputWidget</a></li><li><a href="OO.ui.RadioSelectWidget.html">RadioSelectWidget</a></li><li><a href="OO.ui.SearchInputWidget.html">SearchInputWidget</a></li><li><a href="OO.ui.SearchWidget.html">SearchWidget</a></li><li><a href="OO.ui.SelectFileWidget.html">SelectFileWidget</a></li><li><a href="OO.ui.SelectWidget.html">SelectWidget</a></li><li><a href="OO.ui.StackLayout.html">StackLayout</a></li><li><a href="OO.ui.TabOptionWidget.html">TabOptionWidget</a></li><li><a href="OO.ui.TabPanelLayout.html">TabPanelLayout</a></li><li><a href="OO.ui.TabSelectWidget.html">TabSelectWidget</a></li><li><a href="OO.ui.TagItemWidget.html">TagItemWidget</a></li><li><a href="OO.ui.TagMultiselectWidget.html">TagMultiselectWidget</a></li><li><a href="OO.ui.TextInputWidget.html">TextInputWidget</a></li><li><a href="OO.ui.Theme.html">Theme</a></li><li><a href="OO.ui.ToggleButtonWidget.html">ToggleButtonWidget</a></li><li><a href="OO.ui.ToggleSwitchWidget.html">ToggleSwitchWidget</a></li><li><a href="OO.ui.ToggleWidget.html">ToggleWidget</a></li><li><a href="OO.ui.Tool.html">Tool</a></li><li><a href="OO.ui.Toolbar.html">Toolbar</a></li><li><a href="OO.ui.ToolFactory.html">ToolFactory</a></li><li><a href="OO.ui.ToolGroup.html">ToolGroup</a></li><li><a href="OO.ui.ToolGroupFactory.html">ToolGroupFactory</a></li><li><a href="OO.ui.ToolGroupTool.html">ToolGroupTool</a></li><li><a href="OO.ui.Widget.html">Widget</a></li><li><a href="OO.ui.WikimediaUITheme.html">WikimediaUITheme</a></li><li><a href="OO.ui.Window.html">Window</a></li><li><a href="OO.ui.WindowInstance.html">WindowInstance</a></li><li><a href="OO.ui.WindowManager.html">WindowManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:changeAchangeeventisemittedwhentheon/offstateofthetogglechanges.">change
+
+A change event is emitted when the on/off state of the toggle changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhentheselectedstateoftheoptionchanges.">change
+
+A change event is emitted when the selected state of the option changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofitemschanges,oranitemisselectedordeselected.">change
+
+A change event is emitted when the set of items changes, or an item is selected or deselected.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofselecteditemschanges.">change
+
+A change event is emitted when the set of selected items changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthevalueoftheinputchanges.">change
+
+A change event is emitted when the value of the input changes.</a></li><li><a href="global.html#event:dragendAdragendeventisemittedwhentheuserdragsanitemandreleasesthemouse,thusterminatingthedragoperation.">dragend
+A dragend event is emitted when the user drags an item and releases the mouse,
+thus terminating the drag operation.</a></li><li><a href="global.html#event:dragstartAdragstarteventisemittedwhentheuserclicksandbeginsdragginganitem.">dragstart
+
+A dragstart event is emitted when the user clicks and begins dragging an item.</a></li><li><a href="global.html#event:dropAdropeventisemittedwhentheuserdragsanitemandthenreleasesthemousebuttonoveravalidtarget.">drop
+A drop event is emitted when the user drags an item and then releases the mouse button
+over a valid target.</a></li><li><a href="global.html#event:active">active</a></li><li><a href="global.html#event:add">add</a></li><li><a href="global.html#event:change">change</a></li><li><a href="global.html#event:click">click</a></li><li><a href="global.html#event:closing">closing</a></li><li><a href="global.html#event:disable">disable</a></li><li><a href="global.html#event:drag">drag</a></li><li><a href="global.html#event:draggable">draggable</a></li><li><a href="global.html#event:enter">enter</a></li><li><a href="global.html#event:labelChange">labelChange</a></li><li><a href="global.html#event:move">move</a></li><li><a href="global.html#event:navigate">navigate</a></li><li><a href="global.html#event:opening">opening</a></li><li><a href="global.html#event:remove">remove</a></li><li><a href="global.html#event:reorder">reorder</a></li><li><a href="global.html#event:resize">resize</a></li><li><a href="global.html#event:set">set</a></li><li><a href="global.html#event:submit">submit</a></li><li><a href="global.html#event:toggle">toggle</a></li><li><a href="global.html#event:update">update</a></li><li><a href="global.html#event:valid">valid</a></li><li><a href="global.html#event:visibleItemChange">visibleItemChange</a></li><li><a href="global.html#event:flagAflageventisemittedwhenthe#clearFlagsor#setFlagsmethodsareused.The%2560changes%2560parametercontainsthenameofeachmodifiedflagandindicateswhetheritwasaddedorremoved.">flag
+A flag event is emitted when the #clearFlags or #setFlags methods are used. The `changes`
+parameter contains the name of each modified flag and indicates whether it was
+added or removed.</a></li><li><a href="OO.ui.ButtonElement.html#event:click">click</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.SelectWidget.html#event:add">add</a></li><li><a href="OO.ui.SelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.SelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.SelectWidget.html#event:press">press</a></li><li><a href="OO.ui.SelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.SelectWidget.html#event:select">select</a></li><li><a href="OO.ui.TabSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.TabSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.TabSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.TabSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.TabSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.TabSelectWidget.html#event:select">select</a></li><li><a href="global.html#event:readyThemenuisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The menu is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:readyThepopupisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The popup is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:removeAremoveactionwasperformedontheitem">remove
+
+A remove action was performed on the item</a></li><li><a href="global.html#event:resizeAresizeeventisemittedwhenthewidget'sdimensionschangetoaccomodatenewlyaddeditemsorcurrentuserinput.">resize
+
+A resize event is emitted when the widget's dimensions change to accomodate newly added items or
+current user input.</a></li><li><a href="global.html#event:selectAselecteventisemittedwhenanitemisselectedordeselected.">select
+
+A select event is emitted when an item is selected or deselected.</a></li><li><a href="global.html#event:selectThetagwidgetwasselected.Thiscanoccurwhenthewidgetiseitherclickedorenterwaspressedonit.">select
+
+The tag widget was selected. This can occur when the widget
+is either clicked or enter was pressed on it.</a></li><li><a href="global.html#event:updateStateAn'updateState'eventmustbeemittedontheToolbar(bycalling%2560toolbar.emit('updateState')%2560)everytimethestateoftheapplicationusingthetoolbarchanges,andanupdatetothestateoftoolsisrequired.">updateState
+
+An 'updateState' event must be emitted on the Toolbar (by calling `toolbar.emit( 'updateState' )`)
+every time the state of the application using the toolbar changes, and an update to the state of
+tools is required.</a></li></ul><h3>Mixins</h3><ul><li><a href="OO.ui.mixin.AccessKeyedElement.html">AccessKeyedElement</a></li><li><a href="OO.ui.mixin.ButtonElement.html">ButtonElement</a></li><li><a href="OO.ui.mixin.ClippableElement.html">ClippableElement</a></li><li><a href="OO.ui.mixin.DraggableElement.html">DraggableElement</a></li><li><a href="OO.ui.mixin.DraggableGroupElement.html">DraggableGroupElement</a></li><li><a href="OO.ui.mixin.FlaggedElement.html">FlaggedElement</a></li><li><a href="OO.ui.mixin.FloatableElement.html">FloatableElement</a></li><li><a href="OO.ui.mixin.GroupElement.html">GroupElement</a></li><li><a href="OO.ui.mixin.GroupWidget.html">GroupWidget</a></li><li><a href="OO.ui.mixin.IconElement.html">IconElement</a></li><li><a href="OO.ui.mixin.IndicatorElement.html">IndicatorElement</a></li><li><a href="OO.ui.mixin.LabelElement.html">LabelElement</a></li><li><a href="OO.ui.mixin.LookupElement.html">LookupElement</a></li><li><a href="OO.ui.mixin.PendingElement.html">PendingElement</a></li><li><a href="OO.ui.mixin.PopupElement.html">PopupElement</a></li><li><a href="OO.ui.mixin.RequestManager.html">RequestManager</a></li><li><a href="OO.ui.mixin.TabIndexedElement.html">TabIndexedElement</a></li><li><a href="OO.ui.mixin.TitledElement.html">TitledElement</a></li></ul><h3>Global</h3><ul><li><a href="global.html#isActive">isActive</a></li><li><a href="global.html#setActive">setActive</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Jan 11 2018 12:31:36 GMT+0530 (IST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -19,14 +19,14 @@
  * @abstract
  * @class
  * @extends OO.ui.Widget
- * @mixins OO.ui.mixin.IconElement
- * @mixins OO.ui.mixin.FlaggedElement
- * @mixins OO.ui.mixin.TabIndexedElement
+ * @mixes OO.ui.mixin.IconElement
+ * @mixes OO.ui.mixin.FlaggedElement
+ * @mixes OO.ui.mixin.TabIndexedElement
  *
  * @constructor
  * @param {OO.ui.ToolGroup} toolGroup
  * @param {Object} [config] Configuration options
- * @cfg {string|Function} [title] Title text or a function that returns text. If this config is omitted, the value of
+ * @param {string|Function} [config.title] Title text or a function that returns text. If this config is omitted, the value of
  *  the {@link #static-title static title} property is used.
  *
  *  The title is used in different ways depending on the type of toolgroup that contains the tool. The

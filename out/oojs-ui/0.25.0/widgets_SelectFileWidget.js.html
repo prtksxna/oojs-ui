@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: widgets/SelectFileWidget.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: widgets/SelectFileWidget.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * SelectFileWidgets allow for selecting files, using the HTML5 File API. These
+ * widgets can be configured with {@link OO.ui.mixin.IconElement icons} and {@link
+ * OO.ui.mixin.IndicatorElement indicators}.
+ * Please see the [OOjs UI documentation on MediaWiki] [1] for more information and examples.
+ *
+ *     @example
+ *     // Example of a file select widget
+ *     var selectFile = new OO.ui.SelectFileWidget();
+ *     $( 'body' ).append( selectFile.$element );
+ *
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets
+ *
+ * @class
+ * @extends OO.ui.Widget
+ * @mixes OO.ui.mixin.IconElement
+ * @mixes OO.ui.mixin.IndicatorElement
+ * @mixes OO.ui.mixin.PendingElement
+ * @mixes OO.ui.mixin.LabelElement
+ *
+ * @constructor
+ * @param {Object} [config] Configuration options
+ * @param {string[]|null} [config.accept=null] MIME types to accept. null accepts all types.
+ * @param {string} [config.placeholder] Text to display when no file is selected.
+ * @param {string} [config.notsupported] Text to display when file support is missing in the browser.
+ * @param {boolean} [config.droppable=true] Whether to accept files by drag and drop.
+ * @param {boolean} [config.showDropTarget=false] Whether to show a drop target. Requires droppable to be true.
+ * @param {number} [config.thumbnailSizeLimit=20] File size limit in MiB above which to not try and show a
+ *  preview (for performance)
+ */
+OO.ui.SelectFileWidget = function OoUiSelectFileWidget( config ) {
+	var dragHandler;
+
+	// Configuration initialization
+	config = $.extend( {
+		accept: null,
+		placeholder: OO.ui.msg( 'ooui-selectfile-placeholder' ),
+		notsupported: OO.ui.msg( 'ooui-selectfile-not-supported' ),
+		droppable: true,
+		showDropTarget: false,
+		thumbnailSizeLimit: 20
+	}, config );
+
+	// Parent constructor
+	OO.ui.SelectFileWidget.parent.call( this, config );
+
+	// Mixin constructors
+	OO.ui.mixin.IconElement.call( this, config );
+	OO.ui.mixin.IndicatorElement.call( this, config );
+	OO.ui.mixin.PendingElement.call( this, $.extend( {}, config, { $pending: this.$info } ) );
+	OO.ui.mixin.LabelElement.call( this, config );
+
+	// Properties
+	this.$info = $( '&lt;span>' );
+	this.showDropTarget = config.showDropTarget;
+	this.thumbnailSizeLimit = config.thumbnailSizeLimit;
+	this.isSupported = this.constructor.static.isSupported();
+	this.currentFile = null;
+	if ( Array.isArray( config.accept ) ) {
+		this.accept = config.accept;
+	} else {
+		this.accept = null;
+	}
+	this.placeholder = config.placeholder;
+	this.notsupported = config.notsupported;
+	this.onFileSelectedHandler = this.onFileSelected.bind( this );
+
+	this.selectButton = new OO.ui.ButtonWidget( {
+		classes: [ 'oo-ui-selectFileWidget-selectButton' ],
+		label: OO.ui.msg( 'ooui-selectfile-button-select' ),
+		disabled: this.disabled || !this.isSupported
+	} );
+
+	this.clearButton = new OO.ui.ButtonWidget( {
+		classes: [ 'oo-ui-selectFileWidget-clearButton' ],
+		framed: false,
+		icon: 'close',
+		disabled: this.disabled
+	} );
+
+	// Events
+	this.selectButton.$button.on( {
+		keypress: this.onKeyPress.bind( this )
+	} );
+	this.clearButton.connect( this, {
+		click: 'onClearClick'
+	} );
+	if ( config.droppable ) {
+		dragHandler = this.onDragEnterOrOver.bind( this );
+		this.$element.on( {
+			dragenter: dragHandler,
+			dragover: dragHandler,
+			dragleave: this.onDragLeave.bind( this ),
+			drop: this.onDrop.bind( this )
+		} );
+	}
+
+	// Initialization
+	this.addInput();
+	this.$label.addClass( 'oo-ui-selectFileWidget-label' );
+	this.$info
+		.addClass( 'oo-ui-selectFileWidget-info' )
+		.append( this.$icon, this.$label, this.clearButton.$element, this.$indicator );
+
+	if ( config.droppable &amp;&amp; config.showDropTarget ) {
+		this.selectButton.setIcon( 'upload' );
+		this.$thumbnail = $( '&lt;div>' ).addClass( 'oo-ui-selectFileWidget-thumbnail' );
+		this.setPendingElement( this.$thumbnail );
+		this.$element
+			.addClass( 'oo-ui-selectFileWidget-dropTarget oo-ui-selectFileWidget' )
+			.on( {
+				click: this.onDropTargetClick.bind( this )
+			} )
+			.append(
+				this.$thumbnail,
+				this.$info,
+				this.selectButton.$element,
+				$( '&lt;span>' )
+					.addClass( 'oo-ui-selectFileWidget-dropLabel' )
+					.text( OO.ui.msg( 'ooui-selectfile-dragdrop-placeholder' ) )
+			);
+	} else {
+		this.$element
+			.addClass( 'oo-ui-selectFileWidget' )
+			.append( this.$info, this.selectButton.$element );
+	}
+	this.updateUI();
+};
+
+/* Setup */
+
+OO.inheritClass( OO.ui.SelectFileWidget, OO.ui.Widget );
+OO.mixinClass( OO.ui.SelectFileWidget, OO.ui.mixin.IconElement );
+OO.mixinClass( OO.ui.SelectFileWidget, OO.ui.mixin.IndicatorElement );
+OO.mixinClass( OO.ui.SelectFileWidget, OO.ui.mixin.PendingElement );
+OO.mixinClass( OO.ui.SelectFileWidget, OO.ui.mixin.LabelElement );
+
+/* Static Properties */
+
+/**
+ * Check if this widget is supported
+ *
+ * @static
+ * @return {boolean}
+ */
+OO.ui.SelectFileWidget.static.isSupported = function () {
+	var $input;
+	if ( OO.ui.SelectFileWidget.static.isSupportedCache === null ) {
+		$input = $( '&lt;input>' ).attr( 'type', 'file' );
+		OO.ui.SelectFileWidget.static.isSupportedCache = $input[ 0 ].files !== undefined;
+	}
+	return OO.ui.SelectFileWidget.static.isSupportedCache;
+};
+
+OO.ui.SelectFileWidget.static.isSupportedCache = null;
+
+/* Events */
+
+/**
+ * @event change
+ *
+ * A change event is emitted when the on/off state of the toggle changes.
+ *
+ * @param {File|null} value New value
+ */
+
+/* Methods */
+
+/**
+ * Get the current value of the field
+ *
+ * @return {File|null}
+ */
+OO.ui.SelectFileWidget.prototype.getValue = function () {
+	return this.currentFile;
+};
+
+/**
+ * Set the current value of the field
+ *
+ * @param {File|null} file File to select
+ */
+OO.ui.SelectFileWidget.prototype.setValue = function ( file ) {
+	if ( this.currentFile !== file ) {
+		this.currentFile = file;
+		this.updateUI();
+		this.emit( 'change', this.currentFile );
+	}
+};
+
+/**
+ * Focus the widget.
+ *
+ * Focusses the select file button.
+ *
+ * @chainable
+ */
+OO.ui.SelectFileWidget.prototype.focus = function () {
+	this.selectButton.focus();
+	return this;
+};
+
+/**
+ * Blur the widget.
+ *
+ * @chainable
+ */
+OO.ui.SelectFileWidget.prototype.blur = function () {
+	this.selectButton.blur();
+	return this;
+};
+
+/**
+ * @inheritdoc
+ */
+OO.ui.SelectFileWidget.prototype.simulateLabelClick = function () {
+	this.focus();
+};
+
+/**
+ * Update the user interface when a file is selected or unselected
+ *
+ * @protected
+ */
+OO.ui.SelectFileWidget.prototype.updateUI = function () {
+	var $label;
+	if ( !this.isSupported ) {
+		this.$element.addClass( 'oo-ui-selectFileWidget-notsupported' );
+		this.$element.removeClass( 'oo-ui-selectFileWidget-empty' );
+		this.setLabel( this.notsupported );
+	} else {
+		this.$element.addClass( 'oo-ui-selectFileWidget-supported' );
+		if ( this.currentFile ) {
+			this.$element.removeClass( 'oo-ui-selectFileWidget-empty' );
+			$label = $( [] );
+			$label = $label.add(
+				$( '&lt;span>' )
+					.addClass( 'oo-ui-selectFileWidget-fileName' )
+					.text( this.currentFile.name )
+			);
+			this.setLabel( $label );
+
+			if ( this.showDropTarget ) {
+				this.pushPending();
+				this.loadAndGetImageUrl().done( function ( url ) {
+					this.$thumbnail.css( 'background-image', 'url( ' + url + ' )' );
+				}.bind( this ) ).fail( function () {
+					this.$thumbnail.append(
+						new OO.ui.IconWidget( {
+							icon: 'attachment',
+							classes: [ 'oo-ui-selectFileWidget-noThumbnail-icon' ]
+						} ).$element
+					);
+				}.bind( this ) ).always( function () {
+					this.popPending();
+				}.bind( this ) );
+				this.$element.off( 'click' );
+			}
+		} else {
+			if ( this.showDropTarget ) {
+				this.$element.off( 'click' );
+				this.$element.on( {
+					click: this.onDropTargetClick.bind( this )
+				} );
+				this.$thumbnail
+					.empty()
+					.css( 'background-image', '' );
+			}
+			this.$element.addClass( 'oo-ui-selectFileWidget-empty' );
+			this.setLabel( this.placeholder );
+		}
+	}
+};
+
+/**
+ * If the selected file is an image, get its URL and load it.
+ *
+ * @return {jQuery.Promise} Promise resolves with the image URL after it has loaded
+ */
+OO.ui.SelectFileWidget.prototype.loadAndGetImageUrl = function () {
+	var deferred = $.Deferred(),
+		file = this.currentFile,
+		reader = new FileReader();
+
+	if (
+		file &amp;&amp;
+		( OO.getProp( file, 'type' ) || '' ).indexOf( 'image/' ) === 0 &amp;&amp;
+		file.size &lt; this.thumbnailSizeLimit * 1024 * 1024
+	) {
+		reader.onload = function ( event ) {
+			var img = document.createElement( 'img' );
+			img.addEventListener( 'load', function () {
+				if (
+					img.naturalWidth === 0 ||
+					img.naturalHeight === 0 ||
+					img.complete === false
+				) {
+					deferred.reject();
+				} else {
+					deferred.resolve( event.target.result );
+				}
+			} );
+			img.src = event.target.result;
+		};
+		reader.readAsDataURL( file );
+	} else {
+		deferred.reject();
+	}
+
+	return deferred.promise();
+};
+
+/**
+ * Add the input to the widget
+ *
+ * @private
+ */
+OO.ui.SelectFileWidget.prototype.addInput = function () {
+	if ( this.$input ) {
+		this.$input.remove();
+	}
+
+	if ( !this.isSupported ) {
+		this.$input = null;
+		return;
+	}
+
+	this.$input = $( '&lt;input>' ).attr( 'type', 'file' );
+	this.$input.on( 'change', this.onFileSelectedHandler );
+	this.$input.on( 'click', function ( e ) {
+		// Prevents dropTarget to get clicked which calls
+		// a click on this input
+		e.stopPropagation();
+	} );
+	this.$input.attr( {
+		tabindex: -1
+	} );
+	if ( this.accept ) {
+		this.$input.attr( 'accept', this.accept.join( ', ' ) );
+	}
+	this.selectButton.$button.append( this.$input );
+};
+
+/**
+ * Determine if we should accept this file
+ *
+ * @private
+ * @param {string} mimeType File MIME type
+ * @return {boolean}
+ */
+OO.ui.SelectFileWidget.prototype.isAllowedType = function ( mimeType ) {
+	var i, mimeTest;
+
+	if ( !this.accept || !mimeType ) {
+		return true;
+	}
+
+	for ( i = 0; i &lt; this.accept.length; i++ ) {
+		mimeTest = this.accept[ i ];
+		if ( mimeTest === mimeType ) {
+			return true;
+		} else if ( mimeTest.substr( -2 ) === '/*' ) {
+			mimeTest = mimeTest.substr( 0, mimeTest.length - 1 );
+			if ( mimeType.substr( 0, mimeTest.length ) === mimeTest ) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+};
+
+/**
+ * Handle file selection from the input
+ *
+ * @private
+ * @param {jQuery.Event} e
+ */
+OO.ui.SelectFileWidget.prototype.onFileSelected = function ( e ) {
+	var file = OO.getProp( e.target, 'files', 0 ) || null;
+
+	if ( file &amp;&amp; !this.isAllowedType( file.type ) ) {
+		file = null;
+	}
+
+	this.setValue( file );
+	this.addInput();
+};
+
+/**
+ * Handle clear button click events.
+ *
+ * @private
+ */
+OO.ui.SelectFileWidget.prototype.onClearClick = function () {
+	this.setValue( null );
+	return false;
+};
+
+/**
+ * Handle key press events.
+ *
+ * @private
+ * @param {jQuery.Event} e Key press event
+ */
+OO.ui.SelectFileWidget.prototype.onKeyPress = function ( e ) {
+	if ( this.isSupported &amp;&amp; !this.isDisabled() &amp;&amp; this.$input &amp;&amp;
+		( e.which === OO.ui.Keys.SPACE || e.which === OO.ui.Keys.ENTER )
+	) {
+		this.$input.click();
+		return false;
+	}
+};
+
+/**
+ * Handle drop target click events.
+ *
+ * @private
+ * @param {jQuery.Event} e Key press event
+ */
+OO.ui.SelectFileWidget.prototype.onDropTargetClick = function () {
+	if ( this.isSupported &amp;&amp; !this.isDisabled() &amp;&amp; this.$input ) {
+		this.$input.click();
+		return false;
+	}
+};
+
+/**
+ * Handle drag enter and over events
+ *
+ * @private
+ * @param {jQuery.Event} e Drag event
+ */
+OO.ui.SelectFileWidget.prototype.onDragEnterOrOver = function ( e ) {
+	var itemOrFile,
+		droppableFile = false,
+		dt = e.originalEvent.dataTransfer;
+
+	e.preventDefault();
+	e.stopPropagation();
+
+	if ( this.isDisabled() || !this.isSupported ) {
+		this.$element.removeClass( 'oo-ui-selectFileWidget-canDrop' );
+		dt.dropEffect = 'none';
+		return false;
+	}
+
+	// DataTransferItem and File both have a type property, but in Chrome files
+	// have no information at this point.
+	itemOrFile = OO.getProp( dt, 'items', 0 ) || OO.getProp( dt, 'files', 0 );
+	if ( itemOrFile ) {
+		if ( this.isAllowedType( itemOrFile.type ) ) {
+			droppableFile = true;
+		}
+	// dt.types is Array-like, but not an Array
+	} else if ( Array.prototype.indexOf.call( OO.getProp( dt, 'types' ) || [], 'Files' ) !== -1 ) {
+		// File information is not available at this point for security so just assume
+		// it is acceptable for now.
+		// https://bugzilla.mozilla.org/show_bug.cgi?id=640534
+		droppableFile = true;
+	}
+
+	this.$element.toggleClass( 'oo-ui-selectFileWidget-canDrop', droppableFile );
+	if ( !droppableFile ) {
+		dt.dropEffect = 'none';
+	}
+
+	return false;
+};
+
+/**
+ * Handle drag leave events
+ *
+ * @private
+ * @param {jQuery.Event} e Drag event
+ */
+OO.ui.SelectFileWidget.prototype.onDragLeave = function () {
+	this.$element.removeClass( 'oo-ui-selectFileWidget-canDrop' );
+};
+
+/**
+ * Handle drop events
+ *
+ * @private
+ * @param {jQuery.Event} e Drop event
+ */
+OO.ui.SelectFileWidget.prototype.onDrop = function ( e ) {
+	var file = null,
+		dt = e.originalEvent.dataTransfer;
+
+	e.preventDefault();
+	e.stopPropagation();
+	this.$element.removeClass( 'oo-ui-selectFileWidget-canDrop' );
+
+	if ( this.isDisabled() || !this.isSupported ) {
+		return false;
+	}
+
+	file = OO.getProp( dt, 'files', 0 );
+	if ( file &amp;&amp; !this.isAllowedType( file.type ) ) {
+		file = null;
+	}
+	if ( file ) {
+		this.setValue( file );
+	}
+
+	return false;
+};
+
+/**
+ * @inheritdoc
+ */
+OO.ui.SelectFileWidget.prototype.setDisabled = function ( disabled ) {
+	OO.ui.SelectFileWidget.parent.prototype.setDisabled.call( this, disabled );
+	if ( this.selectButton ) {
+		this.selectButton.setDisabled( disabled );
+	}
+	if ( this.clearButton ) {
+		this.clearButton.setDisabled( disabled );
+	}
+	return this;
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="OO.ui.html">ui</a></li><li><a href="OO.ui.ActionFieldLayout.html">ActionFieldLayout</a></li><li><a href="OO.ui.ActionSet.html">ActionSet</a></li><li><a href="OO.ui.ActionWidget.html">ActionWidget</a></li><li><a href="OO.ui.ApexTheme.html">ApexTheme</a></li><li><a href="OO.ui.BarToolGroup.html">BarToolGroup</a></li><li><a href="OO.ui.BlankTheme.html">BlankTheme</a></li><li><a href="OO.ui.BookletLayout.html">BookletLayout</a></li><li><a href="OO.ui.ButtonGroupWidget.html">ButtonGroupWidget</a></li><li><a href="OO.ui.ButtonInputWidget.html">ButtonInputWidget</a></li><li><a href="OO.ui.ButtonOptionWidget.html">ButtonOptionWidget</a></li><li><a href="OO.ui.ButtonSelectWidget.html">ButtonSelectWidget</a></li><li><a href="OO.ui.ButtonWidget.html">ButtonWidget</a></li><li><a href="OO.ui.CapsuleItemWidget.html">CapsuleItemWidget</a></li><li><a href="OO.ui.CapsuleMultiselectWidget.html">CapsuleMultiselectWidget</a></li><li><a href="OO.ui.CheckboxInputWidget.html">CheckboxInputWidget</a></li><li><a href="OO.ui.CheckboxMultioptionWidget.html">CheckboxMultioptionWidget</a></li><li><a href="OO.ui.CheckboxMultiselectInputWidget.html">CheckboxMultiselectInputWidget</a></li><li><a href="OO.ui.CheckboxMultiselectWidget.html">CheckboxMultiselectWidget</a></li><li><a href="OO.ui.ComboBoxInputWidget.html">ComboBoxInputWidget</a></li><li><a href="OO.ui.DecoratedOptionWidget.html">DecoratedOptionWidget</a></li><li><a href="OO.ui.Dialog.html">Dialog</a></li><li><a href="OO.ui.DropdownInputWidget.html">DropdownInputWidget</a></li><li><a href="OO.ui.DropdownWidget.html">DropdownWidget</a></li><li><a href="OO.ui.Element.html">Element</a></li><li><a href="OO.ui.Error.html">Error</a></li><li><a href="OO.ui.FieldLayout.html">FieldLayout</a></li><li><a href="OO.ui.FieldsetLayout.html">FieldsetLayout</a></li><li><a href="OO.ui.FormLayout.html">FormLayout</a></li><li><a href="OO.ui.HiddenInputWidget.html">HiddenInputWidget</a></li><li><a href="OO.ui.HorizontalLayout.html">HorizontalLayout</a></li><li><a href="OO.ui.HtmlSnippet.html">HtmlSnippet</a></li><li><a href="OO.ui.IconWidget.html">IconWidget</a></li><li><a href="OO.ui.IndexLayout.html">IndexLayout</a></li><li><a href="OO.ui.IndicatorWidget.html">IndicatorWidget</a></li><li><a href="OO.ui.InputWidget.html">InputWidget</a></li><li><a href="OO.ui.LabelWidget.html">LabelWidget</a></li><li><a href="OO.ui.Layout.html">Layout</a></li><li><a href="OO.ui.ListToolGroup.html">ListToolGroup</a></li><li><a href="OO.ui.MenuLayout.html">MenuLayout</a></li><li><a href="OO.ui.MenuOptionWidget.html">MenuOptionWidget</a></li><li><a href="OO.ui.MenuSectionOptionWidget.html">MenuSectionOptionWidget</a></li><li><a href="OO.ui.MenuSelectWidget.html">MenuSelectWidget</a></li><li><a href="OO.ui.MenuTagMultiselectWidget.html">MenuTagMultiselectWidget</a></li><li><a href="OO.ui.MenuToolGroup.html">MenuToolGroup</a></li><li><a href="OO.ui.MessageDialog.html">MessageDialog</a></li><li><a href="OO.ui.mixin.html">mixin</a></li><li><a href="OO.ui.MultilineTextInputWidget.html">MultilineTextInputWidget</a></li><li><a href="OO.ui.MultioptionWidget.html">MultioptionWidget</a></li><li><a href="OO.ui.MultiselectWidget.html">MultiselectWidget</a></li><li><a href="OO.ui.NumberInputWidget.html">NumberInputWidget</a></li><li><a href="OO.ui.OptionWidget.html">OptionWidget</a></li><li><a href="OO.ui.OutlineControlsWidget.html">OutlineControlsWidget</a></li><li><a href="OO.ui.OutlineOptionWidget.html">OutlineOptionWidget</a></li><li><a href="OO.ui.OutlineSelectWidget.html">OutlineSelectWidget</a></li><li><a href="OO.ui.PageLayout.html">PageLayout</a></li><li><a href="OO.ui.PanelLayout.html">PanelLayout</a></li><li><a href="OO.ui.PopupButtonWidget.html">PopupButtonWidget</a></li><li><a href="OO.ui.PopupTagMultiselectWidget.html">PopupTagMultiselectWidget</a></li><li><a href="OO.ui.PopupTool.html">PopupTool</a></li><li><a href="OO.ui.PopupToolGroup.html">PopupToolGroup</a></li><li><a href="OO.ui.PopupWidget.html">PopupWidget</a></li><li><a href="OO.ui.Process.html">Process</a></li><li><a href="OO.ui.ProcessDialog.html">ProcessDialog</a></li><li><a href="OO.ui.ProgressBarWidget.html">ProgressBarWidget</a></li><li><a href="OO.ui.RadioInputWidget.html">RadioInputWidget</a></li><li><a href="OO.ui.RadioOptionWidget.html">RadioOptionWidget</a></li><li><a href="OO.ui.RadioSelectInputWidget.html">RadioSelectInputWidget</a></li><li><a href="OO.ui.RadioSelectWidget.html">RadioSelectWidget</a></li><li><a href="OO.ui.SearchInputWidget.html">SearchInputWidget</a></li><li><a href="OO.ui.SearchWidget.html">SearchWidget</a></li><li><a href="OO.ui.SelectFileWidget.html">SelectFileWidget</a></li><li><a href="OO.ui.SelectWidget.html">SelectWidget</a></li><li><a href="OO.ui.StackLayout.html">StackLayout</a></li><li><a href="OO.ui.TabOptionWidget.html">TabOptionWidget</a></li><li><a href="OO.ui.TabPanelLayout.html">TabPanelLayout</a></li><li><a href="OO.ui.TabSelectWidget.html">TabSelectWidget</a></li><li><a href="OO.ui.TagItemWidget.html">TagItemWidget</a></li><li><a href="OO.ui.TagMultiselectWidget.html">TagMultiselectWidget</a></li><li><a href="OO.ui.TextInputWidget.html">TextInputWidget</a></li><li><a href="OO.ui.Theme.html">Theme</a></li><li><a href="OO.ui.ToggleButtonWidget.html">ToggleButtonWidget</a></li><li><a href="OO.ui.ToggleSwitchWidget.html">ToggleSwitchWidget</a></li><li><a href="OO.ui.ToggleWidget.html">ToggleWidget</a></li><li><a href="OO.ui.Tool.html">Tool</a></li><li><a href="OO.ui.Toolbar.html">Toolbar</a></li><li><a href="OO.ui.ToolFactory.html">ToolFactory</a></li><li><a href="OO.ui.ToolGroup.html">ToolGroup</a></li><li><a href="OO.ui.ToolGroupFactory.html">ToolGroupFactory</a></li><li><a href="OO.ui.ToolGroupTool.html">ToolGroupTool</a></li><li><a href="OO.ui.Widget.html">Widget</a></li><li><a href="OO.ui.WikimediaUITheme.html">WikimediaUITheme</a></li><li><a href="OO.ui.Window.html">Window</a></li><li><a href="OO.ui.WindowInstance.html">WindowInstance</a></li><li><a href="OO.ui.WindowManager.html">WindowManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:changeAchangeeventisemittedwhentheon/offstateofthetogglechanges.">change
+
+A change event is emitted when the on/off state of the toggle changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhentheselectedstateoftheoptionchanges.">change
+
+A change event is emitted when the selected state of the option changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofitemschanges,oranitemisselectedordeselected.">change
+
+A change event is emitted when the set of items changes, or an item is selected or deselected.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofselecteditemschanges.">change
+
+A change event is emitted when the set of selected items changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthevalueoftheinputchanges.">change
+
+A change event is emitted when the value of the input changes.</a></li><li><a href="global.html#event:dragendAdragendeventisemittedwhentheuserdragsanitemandreleasesthemouse,thusterminatingthedragoperation.">dragend
+A dragend event is emitted when the user drags an item and releases the mouse,
+thus terminating the drag operation.</a></li><li><a href="global.html#event:dragstartAdragstarteventisemittedwhentheuserclicksandbeginsdragginganitem.">dragstart
+
+A dragstart event is emitted when the user clicks and begins dragging an item.</a></li><li><a href="global.html#event:dropAdropeventisemittedwhentheuserdragsanitemandthenreleasesthemousebuttonoveravalidtarget.">drop
+A drop event is emitted when the user drags an item and then releases the mouse button
+over a valid target.</a></li><li><a href="global.html#event:active">active</a></li><li><a href="global.html#event:add">add</a></li><li><a href="global.html#event:change">change</a></li><li><a href="global.html#event:click">click</a></li><li><a href="global.html#event:closing">closing</a></li><li><a href="global.html#event:disable">disable</a></li><li><a href="global.html#event:drag">drag</a></li><li><a href="global.html#event:draggable">draggable</a></li><li><a href="global.html#event:enter">enter</a></li><li><a href="global.html#event:labelChange">labelChange</a></li><li><a href="global.html#event:move">move</a></li><li><a href="global.html#event:navigate">navigate</a></li><li><a href="global.html#event:opening">opening</a></li><li><a href="global.html#event:remove">remove</a></li><li><a href="global.html#event:reorder">reorder</a></li><li><a href="global.html#event:resize">resize</a></li><li><a href="global.html#event:set">set</a></li><li><a href="global.html#event:submit">submit</a></li><li><a href="global.html#event:toggle">toggle</a></li><li><a href="global.html#event:update">update</a></li><li><a href="global.html#event:valid">valid</a></li><li><a href="global.html#event:visibleItemChange">visibleItemChange</a></li><li><a href="global.html#event:flagAflageventisemittedwhenthe#clearFlagsor#setFlagsmethodsareused.The%2560changes%2560parametercontainsthenameofeachmodifiedflagandindicateswhetheritwasaddedorremoved.">flag
+A flag event is emitted when the #clearFlags or #setFlags methods are used. The `changes`
+parameter contains the name of each modified flag and indicates whether it was
+added or removed.</a></li><li><a href="OO.ui.ButtonElement.html#event:click">click</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.SelectWidget.html#event:add">add</a></li><li><a href="OO.ui.SelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.SelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.SelectWidget.html#event:press">press</a></li><li><a href="OO.ui.SelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.SelectWidget.html#event:select">select</a></li><li><a href="OO.ui.TabSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.TabSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.TabSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.TabSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.TabSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.TabSelectWidget.html#event:select">select</a></li><li><a href="global.html#event:readyThemenuisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The menu is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:readyThepopupisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The popup is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:removeAremoveactionwasperformedontheitem">remove
+
+A remove action was performed on the item</a></li><li><a href="global.html#event:resizeAresizeeventisemittedwhenthewidget'sdimensionschangetoaccomodatenewlyaddeditemsorcurrentuserinput.">resize
+
+A resize event is emitted when the widget's dimensions change to accomodate newly added items or
+current user input.</a></li><li><a href="global.html#event:selectAselecteventisemittedwhenanitemisselectedordeselected.">select
+
+A select event is emitted when an item is selected or deselected.</a></li><li><a href="global.html#event:selectThetagwidgetwasselected.Thiscanoccurwhenthewidgetiseitherclickedorenterwaspressedonit.">select
+
+The tag widget was selected. This can occur when the widget
+is either clicked or enter was pressed on it.</a></li><li><a href="global.html#event:updateStateAn'updateState'eventmustbeemittedontheToolbar(bycalling%2560toolbar.emit('updateState')%2560)everytimethestateoftheapplicationusingthetoolbarchanges,andanupdatetothestateoftoolsisrequired.">updateState
+
+An 'updateState' event must be emitted on the Toolbar (by calling `toolbar.emit( 'updateState' )`)
+every time the state of the application using the toolbar changes, and an update to the state of
+tools is required.</a></li></ul><h3>Mixins</h3><ul><li><a href="OO.ui.mixin.AccessKeyedElement.html">AccessKeyedElement</a></li><li><a href="OO.ui.mixin.ButtonElement.html">ButtonElement</a></li><li><a href="OO.ui.mixin.ClippableElement.html">ClippableElement</a></li><li><a href="OO.ui.mixin.DraggableElement.html">DraggableElement</a></li><li><a href="OO.ui.mixin.DraggableGroupElement.html">DraggableGroupElement</a></li><li><a href="OO.ui.mixin.FlaggedElement.html">FlaggedElement</a></li><li><a href="OO.ui.mixin.FloatableElement.html">FloatableElement</a></li><li><a href="OO.ui.mixin.GroupElement.html">GroupElement</a></li><li><a href="OO.ui.mixin.GroupWidget.html">GroupWidget</a></li><li><a href="OO.ui.mixin.IconElement.html">IconElement</a></li><li><a href="OO.ui.mixin.IndicatorElement.html">IndicatorElement</a></li><li><a href="OO.ui.mixin.LabelElement.html">LabelElement</a></li><li><a href="OO.ui.mixin.LookupElement.html">LookupElement</a></li><li><a href="OO.ui.mixin.PendingElement.html">PendingElement</a></li><li><a href="OO.ui.mixin.PopupElement.html">PopupElement</a></li><li><a href="OO.ui.mixin.RequestManager.html">RequestManager</a></li><li><a href="OO.ui.mixin.TabIndexedElement.html">TabIndexedElement</a></li><li><a href="OO.ui.mixin.TitledElement.html">TitledElement</a></li></ul><h3>Global</h3><ul><li><a href="global.html#isActive">isActive</a></li><li><a href="global.html#setActive">setActive</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Jan 11 2018 12:31:36 GMT+0530 (IST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: mixins/DraggableGroupElement.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: mixins/DraggableGroupElement.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * DraggableGroupElement is a mixin class used to create a group element to
+ * contain draggable elements, which are items that can be clicked and dragged by a mouse.
+ * The class is used with OO.ui.mixin.DraggableElement.
+ *
+ * @mixin
+ * @mixes OO.ui.mixin.GroupElement
+ *
+ * @param {Object} [config] Configuration options
+ * @param {string} [config.orientation] Item orientation: 'horizontal' or 'vertical'. The orientation
+ *  should match the layout of the items. Items displayed in a single row
+ *  or in several rows should use horizontal orientation. The vertical orientation should only be
+ *  used when the items are displayed in a single column. Defaults to 'vertical'
+ * @param {boolean} [config.draggable] The items are draggable. This can change with #toggleDraggable
+ */
+OO.ui.mixin.DraggableGroupElement = function OoUiMixinDraggableGroupElement( config ) {
+	// Configuration initialization
+	config = config || {};
+
+	// Parent constructor
+	OO.ui.mixin.GroupElement.call( this, config );
+
+	// Properties
+	this.orientation = config.orientation || 'vertical';
+	this.dragItem = null;
+	this.itemKeys = {};
+	this.dir = null;
+	this.itemsOrder = null;
+	this.draggable = config.draggable === undefined ? true : !!config.draggable;
+
+	// Events
+	this.aggregate( {
+		dragstart: 'itemDragStart',
+		dragend: 'itemDragEnd',
+		drop: 'itemDrop'
+	} );
+	this.connect( this, {
+		itemDragStart: 'onItemDragStart',
+		itemDrop: 'onItemDropOrDragEnd',
+		itemDragEnd: 'onItemDropOrDragEnd'
+	} );
+
+	// Initialize
+	if ( Array.isArray( config.items ) ) {
+		this.addItems( config.items );
+	}
+	this.$element
+		.addClass( 'oo-ui-draggableGroupElement' )
+		.toggleClass( 'oo-ui-draggableGroupElement-horizontal', this.orientation === 'horizontal' );
+};
+
+/* Setup */
+OO.mixinClass( OO.ui.mixin.DraggableGroupElement, OO.ui.mixin.GroupElement );
+
+/* Events */
+
+/**
+ * An item has been dragged to a new position, but not yet dropped.
+ *
+ * @event drag
+ * @param {OO.ui.mixin.DraggableElement} item Dragged item
+ * @param {number} [newIndex] New index for the item
+ */
+
+/**
+ * An item has been dropped at a new position.
+ *
+ * @event reorder
+ * @param {OO.ui.mixin.DraggableElement} item Reordered item
+ * @param {number} [newIndex] New index for the item
+ */
+
+/**
+ * Draggable state of this widget has changed.
+ *
+ * @event draggable
+ * @param {boolean} [draggable] Widget is draggable
+ */
+
+/* Methods */
+
+/**
+ * Change the draggable state of this widget.
+ * This allows users to temporarily halt the dragging operations.
+ *
+ * @param {boolean} isDraggable Widget supports draggable operations
+ * @fires draggable
+ */
+OO.ui.mixin.DraggableGroupElement.prototype.toggleDraggable = function ( isDraggable ) {
+	isDraggable = isDraggable !== undefined ? !!isDraggable : !this.draggable;
+
+	if ( this.draggable !== isDraggable ) {
+		this.draggable = isDraggable;
+
+		// Tell the items their draggable state changed
+		this.getItems().forEach( function ( item ) {
+			item.toggleDraggable( this.draggable );
+		}.bind( this ) );
+
+		// Emit event
+		this.emit( 'draggable', this.draggable );
+	}
+};
+
+/**
+ * Check the draggable state of this widget
+ *
+ * @return {boolean} Widget supports draggable operations
+ */
+OO.ui.mixin.DraggableGroupElement.prototype.isDraggable = function () {
+	return this.draggable;
+};
+
+/**
+ * Respond to item drag start event
+ *
+ * @private
+ * @param {OO.ui.mixin.DraggableElement} item Dragged item
+ */
+OO.ui.mixin.DraggableGroupElement.prototype.onItemDragStart = function ( item ) {
+	if ( !this.isDraggable() ) {
+		return;
+	}
+	// Make a shallow copy of this.items so we can re-order it during previews
+	// without affecting the original array.
+	this.itemsOrder = this.items.slice();
+	this.updateIndexes();
+	if ( this.orientation === 'horizontal' ) {
+		// Calculate and cache directionality on drag start - it's a little
+		// expensive and it shouldn't change while dragging.
+		this.dir = this.$element.css( 'direction' );
+	}
+	this.setDragItem( item );
+};
+
+/**
+ * Update the index properties of the items
+ */
+OO.ui.mixin.DraggableGroupElement.prototype.updateIndexes = function () {
+	var i, len;
+
+	// Map the index of each object
+	for ( i = 0, len = this.itemsOrder.length; i &lt; len; i++ ) {
+		this.itemsOrder[ i ].setIndex( i );
+	}
+};
+
+/**
+ * Handle drop or dragend event and switch the order of the items accordingly
+ *
+ * @private
+ * @param {OO.ui.mixin.DraggableElement} item Dropped item
+ */
+OO.ui.mixin.DraggableGroupElement.prototype.onItemDropOrDragEnd = function () {
+	var targetIndex, originalIndex,
+		item = this.getDragItem();
+
+	// TODO: Figure out a way to configure a list of legally droppable
+	// elements even if they are not yet in the list
+	if ( item ) {
+		originalIndex = this.items.indexOf( item );
+		// If the item has moved forward, add one to the index to account for the left shift
+		targetIndex = item.getIndex() + ( item.getIndex() > originalIndex ? 1 : 0 );
+		if ( targetIndex !== originalIndex ) {
+			this.reorder( this.getDragItem(), targetIndex );
+			this.emit( 'reorder', this.getDragItem(), targetIndex );
+		}
+		this.updateIndexes();
+	}
+	this.unsetDragItem();
+	// Return false to prevent propogation
+	return false;
+};
+
+/**
+ * Respond to dragover event
+ *
+ * @private
+ * @param {jQuery.Event} e Dragover event
+ * @fires reorder
+ */
+OO.ui.mixin.DraggableGroupElement.prototype.onDragOver = function ( e ) {
+	var overIndex, targetIndex,
+		item = this.getDragItem(),
+		dragItemIndex = item.getIndex();
+
+	// Get the OptionWidget item we are dragging over
+	overIndex = $( e.target ).closest( '.oo-ui-draggableElement' ).data( 'index' );
+
+	if ( overIndex !== undefined &amp;&amp; overIndex !== dragItemIndex ) {
+		targetIndex = overIndex + ( overIndex > dragItemIndex ? 1 : 0 );
+
+		if ( targetIndex > 0 ) {
+			this.$group.children().eq( targetIndex - 1 ).after( item.$element );
+		} else {
+			this.$group.prepend( item.$element );
+		}
+		// Move item in itemsOrder array
+		this.itemsOrder.splice( overIndex, 0,
+			this.itemsOrder.splice( dragItemIndex, 1 )[ 0 ]
+		);
+		this.updateIndexes();
+		this.emit( 'drag', item, targetIndex );
+	}
+	// Prevent default
+	e.preventDefault();
+};
+
+/**
+ * Reorder the items in the group
+ *
+ * @param {OO.ui.mixin.DraggableElement} item Reordered item
+ * @param {number} newIndex New index
+ */
+OO.ui.mixin.DraggableGroupElement.prototype.reorder = function ( item, newIndex ) {
+	this.addItems( [ item ], newIndex );
+};
+
+/**
+ * Set a dragged item
+ *
+ * @param {OO.ui.mixin.DraggableElement} item Dragged item
+ */
+OO.ui.mixin.DraggableGroupElement.prototype.setDragItem = function ( item ) {
+	if ( this.dragItem !== item ) {
+		this.dragItem = item;
+		this.$element.on( 'dragover', this.onDragOver.bind( this ) );
+		this.$element.addClass( 'oo-ui-draggableGroupElement-dragging' );
+	}
+};
+
+/**
+ * Unset the current dragged item
+ */
+OO.ui.mixin.DraggableGroupElement.prototype.unsetDragItem = function () {
+	if ( this.dragItem ) {
+		this.dragItem = null;
+		this.$element.off( 'dragover' );
+		this.$element.removeClass( 'oo-ui-draggableGroupElement-dragging' );
+	}
+};
+
+/**
+ * Get the item that is currently being dragged.
+ *
+ * @return {OO.ui.mixin.DraggableElement|null} The currently dragged item, or `null` if no item is being dragged
+ */
+OO.ui.mixin.DraggableGroupElement.prototype.getDragItem = function () {
+	return this.dragItem;
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="OO.ui.html">ui</a></li><li><a href="OO.ui.ActionFieldLayout.html">ActionFieldLayout</a></li><li><a href="OO.ui.ActionSet.html">ActionSet</a></li><li><a href="OO.ui.ActionWidget.html">ActionWidget</a></li><li><a href="OO.ui.ApexTheme.html">ApexTheme</a></li><li><a href="OO.ui.BarToolGroup.html">BarToolGroup</a></li><li><a href="OO.ui.BlankTheme.html">BlankTheme</a></li><li><a href="OO.ui.BookletLayout.html">BookletLayout</a></li><li><a href="OO.ui.ButtonGroupWidget.html">ButtonGroupWidget</a></li><li><a href="OO.ui.ButtonInputWidget.html">ButtonInputWidget</a></li><li><a href="OO.ui.ButtonOptionWidget.html">ButtonOptionWidget</a></li><li><a href="OO.ui.ButtonSelectWidget.html">ButtonSelectWidget</a></li><li><a href="OO.ui.ButtonWidget.html">ButtonWidget</a></li><li><a href="OO.ui.CapsuleItemWidget.html">CapsuleItemWidget</a></li><li><a href="OO.ui.CapsuleMultiselectWidget.html">CapsuleMultiselectWidget</a></li><li><a href="OO.ui.CheckboxInputWidget.html">CheckboxInputWidget</a></li><li><a href="OO.ui.CheckboxMultioptionWidget.html">CheckboxMultioptionWidget</a></li><li><a href="OO.ui.CheckboxMultiselectInputWidget.html">CheckboxMultiselectInputWidget</a></li><li><a href="OO.ui.CheckboxMultiselectWidget.html">CheckboxMultiselectWidget</a></li><li><a href="OO.ui.ComboBoxInputWidget.html">ComboBoxInputWidget</a></li><li><a href="OO.ui.DecoratedOptionWidget.html">DecoratedOptionWidget</a></li><li><a href="OO.ui.Dialog.html">Dialog</a></li><li><a href="OO.ui.DropdownInputWidget.html">DropdownInputWidget</a></li><li><a href="OO.ui.DropdownWidget.html">DropdownWidget</a></li><li><a href="OO.ui.Element.html">Element</a></li><li><a href="OO.ui.Error.html">Error</a></li><li><a href="OO.ui.FieldLayout.html">FieldLayout</a></li><li><a href="OO.ui.FieldsetLayout.html">FieldsetLayout</a></li><li><a href="OO.ui.FormLayout.html">FormLayout</a></li><li><a href="OO.ui.HiddenInputWidget.html">HiddenInputWidget</a></li><li><a href="OO.ui.HorizontalLayout.html">HorizontalLayout</a></li><li><a href="OO.ui.HtmlSnippet.html">HtmlSnippet</a></li><li><a href="OO.ui.IconWidget.html">IconWidget</a></li><li><a href="OO.ui.IndexLayout.html">IndexLayout</a></li><li><a href="OO.ui.IndicatorWidget.html">IndicatorWidget</a></li><li><a href="OO.ui.InputWidget.html">InputWidget</a></li><li><a href="OO.ui.LabelWidget.html">LabelWidget</a></li><li><a href="OO.ui.Layout.html">Layout</a></li><li><a href="OO.ui.ListToolGroup.html">ListToolGroup</a></li><li><a href="OO.ui.MenuLayout.html">MenuLayout</a></li><li><a href="OO.ui.MenuOptionWidget.html">MenuOptionWidget</a></li><li><a href="OO.ui.MenuSectionOptionWidget.html">MenuSectionOptionWidget</a></li><li><a href="OO.ui.MenuSelectWidget.html">MenuSelectWidget</a></li><li><a href="OO.ui.MenuTagMultiselectWidget.html">MenuTagMultiselectWidget</a></li><li><a href="OO.ui.MenuToolGroup.html">MenuToolGroup</a></li><li><a href="OO.ui.MessageDialog.html">MessageDialog</a></li><li><a href="OO.ui.mixin.html">mixin</a></li><li><a href="OO.ui.MultilineTextInputWidget.html">MultilineTextInputWidget</a></li><li><a href="OO.ui.MultioptionWidget.html">MultioptionWidget</a></li><li><a href="OO.ui.MultiselectWidget.html">MultiselectWidget</a></li><li><a href="OO.ui.NumberInputWidget.html">NumberInputWidget</a></li><li><a href="OO.ui.OptionWidget.html">OptionWidget</a></li><li><a href="OO.ui.OutlineControlsWidget.html">OutlineControlsWidget</a></li><li><a href="OO.ui.OutlineOptionWidget.html">OutlineOptionWidget</a></li><li><a href="OO.ui.OutlineSelectWidget.html">OutlineSelectWidget</a></li><li><a href="OO.ui.PageLayout.html">PageLayout</a></li><li><a href="OO.ui.PanelLayout.html">PanelLayout</a></li><li><a href="OO.ui.PopupButtonWidget.html">PopupButtonWidget</a></li><li><a href="OO.ui.PopupTagMultiselectWidget.html">PopupTagMultiselectWidget</a></li><li><a href="OO.ui.PopupTool.html">PopupTool</a></li><li><a href="OO.ui.PopupToolGroup.html">PopupToolGroup</a></li><li><a href="OO.ui.PopupWidget.html">PopupWidget</a></li><li><a href="OO.ui.Process.html">Process</a></li><li><a href="OO.ui.ProcessDialog.html">ProcessDialog</a></li><li><a href="OO.ui.ProgressBarWidget.html">ProgressBarWidget</a></li><li><a href="OO.ui.RadioInputWidget.html">RadioInputWidget</a></li><li><a href="OO.ui.RadioOptionWidget.html">RadioOptionWidget</a></li><li><a href="OO.ui.RadioSelectInputWidget.html">RadioSelectInputWidget</a></li><li><a href="OO.ui.RadioSelectWidget.html">RadioSelectWidget</a></li><li><a href="OO.ui.SearchInputWidget.html">SearchInputWidget</a></li><li><a href="OO.ui.SearchWidget.html">SearchWidget</a></li><li><a href="OO.ui.SelectFileWidget.html">SelectFileWidget</a></li><li><a href="OO.ui.SelectWidget.html">SelectWidget</a></li><li><a href="OO.ui.StackLayout.html">StackLayout</a></li><li><a href="OO.ui.TabOptionWidget.html">TabOptionWidget</a></li><li><a href="OO.ui.TabPanelLayout.html">TabPanelLayout</a></li><li><a href="OO.ui.TabSelectWidget.html">TabSelectWidget</a></li><li><a href="OO.ui.TagItemWidget.html">TagItemWidget</a></li><li><a href="OO.ui.TagMultiselectWidget.html">TagMultiselectWidget</a></li><li><a href="OO.ui.TextInputWidget.html">TextInputWidget</a></li><li><a href="OO.ui.Theme.html">Theme</a></li><li><a href="OO.ui.ToggleButtonWidget.html">ToggleButtonWidget</a></li><li><a href="OO.ui.ToggleSwitchWidget.html">ToggleSwitchWidget</a></li><li><a href="OO.ui.ToggleWidget.html">ToggleWidget</a></li><li><a href="OO.ui.Tool.html">Tool</a></li><li><a href="OO.ui.Toolbar.html">Toolbar</a></li><li><a href="OO.ui.ToolFactory.html">ToolFactory</a></li><li><a href="OO.ui.ToolGroup.html">ToolGroup</a></li><li><a href="OO.ui.ToolGroupFactory.html">ToolGroupFactory</a></li><li><a href="OO.ui.ToolGroupTool.html">ToolGroupTool</a></li><li><a href="OO.ui.Widget.html">Widget</a></li><li><a href="OO.ui.WikimediaUITheme.html">WikimediaUITheme</a></li><li><a href="OO.ui.Window.html">Window</a></li><li><a href="OO.ui.WindowInstance.html">WindowInstance</a></li><li><a href="OO.ui.WindowManager.html">WindowManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:changeAchangeeventisemittedwhentheon/offstateofthetogglechanges.">change
+
+A change event is emitted when the on/off state of the toggle changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhentheselectedstateoftheoptionchanges.">change
+
+A change event is emitted when the selected state of the option changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofitemschanges,oranitemisselectedordeselected.">change
+
+A change event is emitted when the set of items changes, or an item is selected or deselected.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofselecteditemschanges.">change
+
+A change event is emitted when the set of selected items changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthevalueoftheinputchanges.">change
+
+A change event is emitted when the value of the input changes.</a></li><li><a href="global.html#event:dragendAdragendeventisemittedwhentheuserdragsanitemandreleasesthemouse,thusterminatingthedragoperation.">dragend
+A dragend event is emitted when the user drags an item and releases the mouse,
+thus terminating the drag operation.</a></li><li><a href="global.html#event:dragstartAdragstarteventisemittedwhentheuserclicksandbeginsdragginganitem.">dragstart
+
+A dragstart event is emitted when the user clicks and begins dragging an item.</a></li><li><a href="global.html#event:dropAdropeventisemittedwhentheuserdragsanitemandthenreleasesthemousebuttonoveravalidtarget.">drop
+A drop event is emitted when the user drags an item and then releases the mouse button
+over a valid target.</a></li><li><a href="global.html#event:active">active</a></li><li><a href="global.html#event:add">add</a></li><li><a href="global.html#event:change">change</a></li><li><a href="global.html#event:click">click</a></li><li><a href="global.html#event:closing">closing</a></li><li><a href="global.html#event:disable">disable</a></li><li><a href="global.html#event:drag">drag</a></li><li><a href="global.html#event:draggable">draggable</a></li><li><a href="global.html#event:enter">enter</a></li><li><a href="global.html#event:labelChange">labelChange</a></li><li><a href="global.html#event:move">move</a></li><li><a href="global.html#event:navigate">navigate</a></li><li><a href="global.html#event:opening">opening</a></li><li><a href="global.html#event:remove">remove</a></li><li><a href="global.html#event:reorder">reorder</a></li><li><a href="global.html#event:resize">resize</a></li><li><a href="global.html#event:set">set</a></li><li><a href="global.html#event:submit">submit</a></li><li><a href="global.html#event:toggle">toggle</a></li><li><a href="global.html#event:update">update</a></li><li><a href="global.html#event:valid">valid</a></li><li><a href="global.html#event:visibleItemChange">visibleItemChange</a></li><li><a href="global.html#event:flagAflageventisemittedwhenthe#clearFlagsor#setFlagsmethodsareused.The%2560changes%2560parametercontainsthenameofeachmodifiedflagandindicateswhetheritwasaddedorremoved.">flag
+A flag event is emitted when the #clearFlags or #setFlags methods are used. The `changes`
+parameter contains the name of each modified flag and indicates whether it was
+added or removed.</a></li><li><a href="OO.ui.ButtonElement.html#event:click">click</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.SelectWidget.html#event:add">add</a></li><li><a href="OO.ui.SelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.SelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.SelectWidget.html#event:press">press</a></li><li><a href="OO.ui.SelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.SelectWidget.html#event:select">select</a></li><li><a href="OO.ui.TabSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.TabSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.TabSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.TabSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.TabSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.TabSelectWidget.html#event:select">select</a></li><li><a href="global.html#event:readyThemenuisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The menu is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:readyThepopupisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The popup is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:removeAremoveactionwasperformedontheitem">remove
+
+A remove action was performed on the item</a></li><li><a href="global.html#event:resizeAresizeeventisemittedwhenthewidget'sdimensionschangetoaccomodatenewlyaddeditemsorcurrentuserinput.">resize
+
+A resize event is emitted when the widget's dimensions change to accomodate newly added items or
+current user input.</a></li><li><a href="global.html#event:selectAselecteventisemittedwhenanitemisselectedordeselected.">select
+
+A select event is emitted when an item is selected or deselected.</a></li><li><a href="global.html#event:selectThetagwidgetwasselected.Thiscanoccurwhenthewidgetiseitherclickedorenterwaspressedonit.">select
+
+The tag widget was selected. This can occur when the widget
+is either clicked or enter was pressed on it.</a></li><li><a href="global.html#event:updateStateAn'updateState'eventmustbeemittedontheToolbar(bycalling%2560toolbar.emit('updateState')%2560)everytimethestateoftheapplicationusingthetoolbarchanges,andanupdatetothestateoftoolsisrequired.">updateState
+
+An 'updateState' event must be emitted on the Toolbar (by calling `toolbar.emit( 'updateState' )`)
+every time the state of the application using the toolbar changes, and an update to the state of
+tools is required.</a></li></ul><h3>Mixins</h3><ul><li><a href="OO.ui.mixin.AccessKeyedElement.html">AccessKeyedElement</a></li><li><a href="OO.ui.mixin.ButtonElement.html">ButtonElement</a></li><li><a href="OO.ui.mixin.ClippableElement.html">ClippableElement</a></li><li><a href="OO.ui.mixin.DraggableElement.html">DraggableElement</a></li><li><a href="OO.ui.mixin.DraggableGroupElement.html">DraggableGroupElement</a></li><li><a href="OO.ui.mixin.FlaggedElement.html">FlaggedElement</a></li><li><a href="OO.ui.mixin.FloatableElement.html">FloatableElement</a></li><li><a href="OO.ui.mixin.GroupElement.html">GroupElement</a></li><li><a href="OO.ui.mixin.GroupWidget.html">GroupWidget</a></li><li><a href="OO.ui.mixin.IconElement.html">IconElement</a></li><li><a href="OO.ui.mixin.IndicatorElement.html">IndicatorElement</a></li><li><a href="OO.ui.mixin.LabelElement.html">LabelElement</a></li><li><a href="OO.ui.mixin.LookupElement.html">LookupElement</a></li><li><a href="OO.ui.mixin.PendingElement.html">PendingElement</a></li><li><a href="OO.ui.mixin.PopupElement.html">PopupElement</a></li><li><a href="OO.ui.mixin.RequestManager.html">RequestManager</a></li><li><a href="OO.ui.mixin.TabIndexedElement.html">TabIndexedElement</a></li><li><a href="OO.ui.mixin.TitledElement.html">TitledElement</a></li></ul><h3>Global</h3><ul><li><a href="global.html#isActive">isActive</a></li><li><a href="global.html#setActive">setActive</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Jan 11 2018 12:31:36 GMT+0530 (IST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

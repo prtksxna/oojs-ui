@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: mixins/LookupElement.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: mixins/LookupElement.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * LookupElement is a mixin that creates a {@link OO.ui.MenuSelectWidget menu} of suggested values for
+ * a {@link OO.ui.TextInputWidget text input widget}. Suggested values are based on the characters the user types
+ * into the text input field and, in general, the menu is only displayed when the user types. If a suggested value is chosen
+ * from the lookup menu, that value becomes the value of the input field.
+ *
+ * Note that a new menu of suggested items is displayed when a value is chosen from the lookup menu. If this is
+ * not the desired behavior, disable lookup menus with the #setLookupsDisabled method, then set the value, then
+ * re-enable lookups.
+ *
+ * See the [OOjs UI demos][1] for an example.
+ *
+ * [1]: https://tools.wmflabs.org/oojs-ui/oojs-ui/demos/index.html#widgets-apex-vector-ltr
+ *
+ * @mixin
+ * @abstract
+ * @mixes OO.ui.mixin.RequestManager
+ *
+ * @param {Object} [config] Configuration options
+ * @param {jQuery} [config.$overlay] Overlay for the lookup menu; defaults to relative positioning.
+ *  See &lt;https://www.mediawiki.org/wiki/OOjs_UI/Concepts#Overlays>.
+ * @param {jQuery} [config.$container=this.$element] The container element. The lookup menu is rendered beneath the specified element.
+ * @param {boolean} [config.allowSuggestionsWhenEmpty=false] Request and display a lookup menu when the text input is empty.
+ *  By default, the lookup menu is not generated and displayed until the user begins to type.
+ * @param {boolean} [config.highlightFirst=true] Whether the first lookup result should be highlighted (so, that the user can
+ *  take it over into the input with simply pressing return) automatically or not.
+ */
+OO.ui.mixin.LookupElement = function OoUiMixinLookupElement( config ) {
+	// Configuration initialization
+	config = $.extend( { highlightFirst: true }, config );
+
+	// Mixin constructors
+	OO.ui.mixin.RequestManager.call( this, config );
+
+	// Properties
+	this.$overlay = ( config.$overlay === true ? OO.ui.getDefaultOverlay() : config.$overlay ) || this.$element;
+	this.lookupMenu = new OO.ui.MenuSelectWidget( {
+		widget: this,
+		input: this,
+		$floatableContainer: config.$container || this.$element
+	} );
+
+	this.allowSuggestionsWhenEmpty = config.allowSuggestionsWhenEmpty || false;
+
+	this.lookupsDisabled = false;
+	this.lookupInputFocused = false;
+	this.lookupHighlightFirstItem = config.highlightFirst;
+
+	// Events
+	this.$input.on( {
+		focus: this.onLookupInputFocus.bind( this ),
+		blur: this.onLookupInputBlur.bind( this ),
+		mousedown: this.onLookupInputMouseDown.bind( this )
+	} );
+	this.connect( this, { change: 'onLookupInputChange' } );
+	this.lookupMenu.connect( this, {
+		toggle: 'onLookupMenuToggle',
+		choose: 'onLookupMenuItemChoose'
+	} );
+
+	// Initialization
+	this.$input.attr( {
+		role: 'combobox',
+		'aria-owns': this.lookupMenu.getElementId(),
+		'aria-autocomplete': 'list'
+	} );
+	this.$element.addClass( 'oo-ui-lookupElement' );
+	this.lookupMenu.$element.addClass( 'oo-ui-lookupElement-menu' );
+	this.$overlay.append( this.lookupMenu.$element );
+};
+
+/* Setup */
+
+OO.mixinClass( OO.ui.mixin.LookupElement, OO.ui.mixin.RequestManager );
+
+/* Methods */
+
+/**
+ * Handle input focus event.
+ *
+ * @protected
+ * @param {jQuery.Event} e Input focus event
+ */
+OO.ui.mixin.LookupElement.prototype.onLookupInputFocus = function () {
+	this.lookupInputFocused = true;
+	this.populateLookupMenu();
+};
+
+/**
+ * Handle input blur event.
+ *
+ * @protected
+ * @param {jQuery.Event} e Input blur event
+ */
+OO.ui.mixin.LookupElement.prototype.onLookupInputBlur = function () {
+	this.closeLookupMenu();
+	this.lookupInputFocused = false;
+};
+
+/**
+ * Handle input mouse down event.
+ *
+ * @protected
+ * @param {jQuery.Event} e Input mouse down event
+ */
+OO.ui.mixin.LookupElement.prototype.onLookupInputMouseDown = function () {
+	// Only open the menu if the input was already focused.
+	// This way we allow the user to open the menu again after closing it with Esc
+	// by clicking in the input. Opening (and populating) the menu when initially
+	// clicking into the input is handled by the focus handler.
+	if ( this.lookupInputFocused &amp;&amp; !this.lookupMenu.isVisible() ) {
+		this.populateLookupMenu();
+	}
+};
+
+/**
+ * Handle input change event.
+ *
+ * @protected
+ * @param {string} value New input value
+ */
+OO.ui.mixin.LookupElement.prototype.onLookupInputChange = function () {
+	if ( this.lookupInputFocused ) {
+		this.populateLookupMenu();
+	}
+};
+
+/**
+ * Handle the lookup menu being shown/hidden.
+ *
+ * @protected
+ * @param {boolean} visible Whether the lookup menu is now visible.
+ */
+OO.ui.mixin.LookupElement.prototype.onLookupMenuToggle = function ( visible ) {
+	if ( !visible ) {
+		// When the menu is hidden, abort any active request and clear the menu.
+		// This has to be done here in addition to closeLookupMenu(), because
+		// MenuSelectWidget will close itself when the user presses Esc.
+		this.abortLookupRequest();
+		this.lookupMenu.clearItems();
+	}
+};
+
+/**
+ * Handle menu item 'choose' event, updating the text input value to the value of the clicked item.
+ *
+ * @protected
+ * @param {OO.ui.MenuOptionWidget} item Selected item
+ */
+OO.ui.mixin.LookupElement.prototype.onLookupMenuItemChoose = function ( item ) {
+	this.setValue( item.getData() );
+};
+
+/**
+ * Get lookup menu.
+ *
+ * @private
+ * @return {OO.ui.MenuSelectWidget}
+ */
+OO.ui.mixin.LookupElement.prototype.getLookupMenu = function () {
+	return this.lookupMenu;
+};
+
+/**
+ * Disable or re-enable lookups.
+ *
+ * When lookups are disabled, calls to #populateLookupMenu will be ignored.
+ *
+ * @param {boolean} disabled Disable lookups
+ */
+OO.ui.mixin.LookupElement.prototype.setLookupsDisabled = function ( disabled ) {
+	this.lookupsDisabled = !!disabled;
+};
+
+/**
+ * Open the menu. If there are no entries in the menu, this does nothing.
+ *
+ * @private
+ * @chainable
+ */
+OO.ui.mixin.LookupElement.prototype.openLookupMenu = function () {
+	if ( !this.lookupMenu.isEmpty() ) {
+		this.lookupMenu.toggle( true );
+	}
+	return this;
+};
+
+/**
+ * Close the menu, empty it, and abort any pending request.
+ *
+ * @private
+ * @chainable
+ */
+OO.ui.mixin.LookupElement.prototype.closeLookupMenu = function () {
+	this.lookupMenu.toggle( false );
+	this.abortLookupRequest();
+	this.lookupMenu.clearItems();
+	return this;
+};
+
+/**
+ * Request menu items based on the input's current value, and when they arrive,
+ * populate the menu with these items and show the menu.
+ *
+ * If lookups have been disabled with #setLookupsDisabled, this function does nothing.
+ *
+ * @private
+ * @chainable
+ */
+OO.ui.mixin.LookupElement.prototype.populateLookupMenu = function () {
+	var widget = this,
+		value = this.getValue();
+
+	if ( this.lookupsDisabled || this.isReadOnly() ) {
+		return;
+	}
+
+	// If the input is empty, clear the menu, unless suggestions when empty are allowed.
+	if ( !this.allowSuggestionsWhenEmpty &amp;&amp; value === '' ) {
+		this.closeLookupMenu();
+	// Skip population if there is already a request pending for the current value
+	} else if ( value !== this.lookupQuery ) {
+		this.getLookupMenuItems()
+			.done( function ( items ) {
+				widget.lookupMenu.clearItems();
+				if ( items.length ) {
+					widget.lookupMenu
+						.addItems( items )
+						.toggle( true );
+					widget.initializeLookupMenuSelection();
+				} else {
+					widget.lookupMenu.toggle( false );
+				}
+			} )
+			.fail( function () {
+				widget.lookupMenu.clearItems();
+			} );
+	}
+
+	return this;
+};
+
+/**
+ * Highlight the first selectable item in the menu, if configured.
+ *
+ * @private
+ * @chainable
+ */
+OO.ui.mixin.LookupElement.prototype.initializeLookupMenuSelection = function () {
+	if ( this.lookupHighlightFirstItem &amp;&amp; !this.lookupMenu.getSelectedItem() ) {
+		this.lookupMenu.highlightItem( this.lookupMenu.findFirstSelectableItem() );
+	}
+};
+
+/**
+ * Get lookup menu items for the current query.
+ *
+ * @private
+ * @return {jQuery.Promise} Promise object which will be passed menu items as the first argument of
+ *   the done event. If the request was aborted to make way for a subsequent request, this promise
+ *   will not be rejected: it will remain pending forever.
+ */
+OO.ui.mixin.LookupElement.prototype.getLookupMenuItems = function () {
+	return this.getRequestData().then( function ( data ) {
+		return this.getLookupMenuOptionsFromData( data );
+	}.bind( this ) );
+};
+
+/**
+ * Abort the currently pending lookup request, if any.
+ *
+ * @private
+ */
+OO.ui.mixin.LookupElement.prototype.abortLookupRequest = function () {
+	this.abortRequest();
+};
+
+/**
+ * Get a new request object of the current lookup query value.
+ *
+ * @protected
+ * @method
+ * @abstract
+ * @return {jQuery.Promise} jQuery AJAX object, or promise object with an .abort() method
+ */
+OO.ui.mixin.LookupElement.prototype.getLookupRequest = null;
+
+/**
+ * Pre-process data returned by the request from #getLookupRequest.
+ *
+ * The return value of this function will be cached, and any further queries for the given value
+ * will use the cache rather than doing API requests.
+ *
+ * @protected
+ * @method
+ * @abstract
+ * @param {Mixed} response Response from server
+ * @return {Mixed} Cached result data
+ */
+OO.ui.mixin.LookupElement.prototype.getLookupCacheDataFromResponse = null;
+
+/**
+ * Get a list of menu option widgets from the (possibly cached) data returned by
+ * #getLookupCacheDataFromResponse.
+ *
+ * @protected
+ * @method
+ * @abstract
+ * @param {Mixed} data Cached result data, usually an array
+ * @return {OO.ui.MenuOptionWidget[]} Menu items
+ */
+OO.ui.mixin.LookupElement.prototype.getLookupMenuOptionsFromData = null;
+
+/**
+ * Set the read-only state of the widget.
+ *
+ * This will also disable/enable the lookups functionality.
+ *
+ * @param {boolean} readOnly Make input read-only
+ * @chainable
+ */
+OO.ui.mixin.LookupElement.prototype.setReadOnly = function ( readOnly ) {
+	// Parent method
+	// Note: Calling #setReadOnly this way assumes this is mixed into an OO.ui.TextInputWidget
+	OO.ui.TextInputWidget.prototype.setReadOnly.call( this, readOnly );
+
+	// During construction, #setReadOnly is called before the OO.ui.mixin.LookupElement constructor
+	if ( this.isReadOnly() &amp;&amp; this.lookupMenu ) {
+		this.closeLookupMenu();
+	}
+
+	return this;
+};
+
+/**
+ * @inheritdoc OO.ui.mixin.RequestManager
+ */
+OO.ui.mixin.LookupElement.prototype.getRequestQuery = function () {
+	return this.getValue();
+};
+
+/**
+ * @inheritdoc OO.ui.mixin.RequestManager
+ */
+OO.ui.mixin.LookupElement.prototype.getRequest = function () {
+	return this.getLookupRequest();
+};
+
+/**
+ * @inheritdoc OO.ui.mixin.RequestManager
+ */
+OO.ui.mixin.LookupElement.prototype.getRequestCacheDataFromResponse = function ( response ) {
+	return this.getLookupCacheDataFromResponse( response );
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="OO.ui.html">ui</a></li><li><a href="OO.ui.ActionFieldLayout.html">ActionFieldLayout</a></li><li><a href="OO.ui.ActionSet.html">ActionSet</a></li><li><a href="OO.ui.ActionWidget.html">ActionWidget</a></li><li><a href="OO.ui.ApexTheme.html">ApexTheme</a></li><li><a href="OO.ui.BarToolGroup.html">BarToolGroup</a></li><li><a href="OO.ui.BlankTheme.html">BlankTheme</a></li><li><a href="OO.ui.BookletLayout.html">BookletLayout</a></li><li><a href="OO.ui.ButtonGroupWidget.html">ButtonGroupWidget</a></li><li><a href="OO.ui.ButtonInputWidget.html">ButtonInputWidget</a></li><li><a href="OO.ui.ButtonOptionWidget.html">ButtonOptionWidget</a></li><li><a href="OO.ui.ButtonSelectWidget.html">ButtonSelectWidget</a></li><li><a href="OO.ui.ButtonWidget.html">ButtonWidget</a></li><li><a href="OO.ui.CapsuleItemWidget.html">CapsuleItemWidget</a></li><li><a href="OO.ui.CapsuleMultiselectWidget.html">CapsuleMultiselectWidget</a></li><li><a href="OO.ui.CheckboxInputWidget.html">CheckboxInputWidget</a></li><li><a href="OO.ui.CheckboxMultioptionWidget.html">CheckboxMultioptionWidget</a></li><li><a href="OO.ui.CheckboxMultiselectInputWidget.html">CheckboxMultiselectInputWidget</a></li><li><a href="OO.ui.CheckboxMultiselectWidget.html">CheckboxMultiselectWidget</a></li><li><a href="OO.ui.ComboBoxInputWidget.html">ComboBoxInputWidget</a></li><li><a href="OO.ui.DecoratedOptionWidget.html">DecoratedOptionWidget</a></li><li><a href="OO.ui.Dialog.html">Dialog</a></li><li><a href="OO.ui.DropdownInputWidget.html">DropdownInputWidget</a></li><li><a href="OO.ui.DropdownWidget.html">DropdownWidget</a></li><li><a href="OO.ui.Element.html">Element</a></li><li><a href="OO.ui.Error.html">Error</a></li><li><a href="OO.ui.FieldLayout.html">FieldLayout</a></li><li><a href="OO.ui.FieldsetLayout.html">FieldsetLayout</a></li><li><a href="OO.ui.FormLayout.html">FormLayout</a></li><li><a href="OO.ui.HiddenInputWidget.html">HiddenInputWidget</a></li><li><a href="OO.ui.HorizontalLayout.html">HorizontalLayout</a></li><li><a href="OO.ui.HtmlSnippet.html">HtmlSnippet</a></li><li><a href="OO.ui.IconWidget.html">IconWidget</a></li><li><a href="OO.ui.IndexLayout.html">IndexLayout</a></li><li><a href="OO.ui.IndicatorWidget.html">IndicatorWidget</a></li><li><a href="OO.ui.InputWidget.html">InputWidget</a></li><li><a href="OO.ui.LabelWidget.html">LabelWidget</a></li><li><a href="OO.ui.Layout.html">Layout</a></li><li><a href="OO.ui.ListToolGroup.html">ListToolGroup</a></li><li><a href="OO.ui.MenuLayout.html">MenuLayout</a></li><li><a href="OO.ui.MenuOptionWidget.html">MenuOptionWidget</a></li><li><a href="OO.ui.MenuSectionOptionWidget.html">MenuSectionOptionWidget</a></li><li><a href="OO.ui.MenuSelectWidget.html">MenuSelectWidget</a></li><li><a href="OO.ui.MenuTagMultiselectWidget.html">MenuTagMultiselectWidget</a></li><li><a href="OO.ui.MenuToolGroup.html">MenuToolGroup</a></li><li><a href="OO.ui.MessageDialog.html">MessageDialog</a></li><li><a href="OO.ui.mixin.html">mixin</a></li><li><a href="OO.ui.MultilineTextInputWidget.html">MultilineTextInputWidget</a></li><li><a href="OO.ui.MultioptionWidget.html">MultioptionWidget</a></li><li><a href="OO.ui.MultiselectWidget.html">MultiselectWidget</a></li><li><a href="OO.ui.NumberInputWidget.html">NumberInputWidget</a></li><li><a href="OO.ui.OptionWidget.html">OptionWidget</a></li><li><a href="OO.ui.OutlineControlsWidget.html">OutlineControlsWidget</a></li><li><a href="OO.ui.OutlineOptionWidget.html">OutlineOptionWidget</a></li><li><a href="OO.ui.OutlineSelectWidget.html">OutlineSelectWidget</a></li><li><a href="OO.ui.PageLayout.html">PageLayout</a></li><li><a href="OO.ui.PanelLayout.html">PanelLayout</a></li><li><a href="OO.ui.PopupButtonWidget.html">PopupButtonWidget</a></li><li><a href="OO.ui.PopupTagMultiselectWidget.html">PopupTagMultiselectWidget</a></li><li><a href="OO.ui.PopupTool.html">PopupTool</a></li><li><a href="OO.ui.PopupToolGroup.html">PopupToolGroup</a></li><li><a href="OO.ui.PopupWidget.html">PopupWidget</a></li><li><a href="OO.ui.Process.html">Process</a></li><li><a href="OO.ui.ProcessDialog.html">ProcessDialog</a></li><li><a href="OO.ui.ProgressBarWidget.html">ProgressBarWidget</a></li><li><a href="OO.ui.RadioInputWidget.html">RadioInputWidget</a></li><li><a href="OO.ui.RadioOptionWidget.html">RadioOptionWidget</a></li><li><a href="OO.ui.RadioSelectInputWidget.html">RadioSelectInputWidget</a></li><li><a href="OO.ui.RadioSelectWidget.html">RadioSelectWidget</a></li><li><a href="OO.ui.SearchInputWidget.html">SearchInputWidget</a></li><li><a href="OO.ui.SearchWidget.html">SearchWidget</a></li><li><a href="OO.ui.SelectFileWidget.html">SelectFileWidget</a></li><li><a href="OO.ui.SelectWidget.html">SelectWidget</a></li><li><a href="OO.ui.StackLayout.html">StackLayout</a></li><li><a href="OO.ui.TabOptionWidget.html">TabOptionWidget</a></li><li><a href="OO.ui.TabPanelLayout.html">TabPanelLayout</a></li><li><a href="OO.ui.TabSelectWidget.html">TabSelectWidget</a></li><li><a href="OO.ui.TagItemWidget.html">TagItemWidget</a></li><li><a href="OO.ui.TagMultiselectWidget.html">TagMultiselectWidget</a></li><li><a href="OO.ui.TextInputWidget.html">TextInputWidget</a></li><li><a href="OO.ui.Theme.html">Theme</a></li><li><a href="OO.ui.ToggleButtonWidget.html">ToggleButtonWidget</a></li><li><a href="OO.ui.ToggleSwitchWidget.html">ToggleSwitchWidget</a></li><li><a href="OO.ui.ToggleWidget.html">ToggleWidget</a></li><li><a href="OO.ui.Tool.html">Tool</a></li><li><a href="OO.ui.Toolbar.html">Toolbar</a></li><li><a href="OO.ui.ToolFactory.html">ToolFactory</a></li><li><a href="OO.ui.ToolGroup.html">ToolGroup</a></li><li><a href="OO.ui.ToolGroupFactory.html">ToolGroupFactory</a></li><li><a href="OO.ui.ToolGroupTool.html">ToolGroupTool</a></li><li><a href="OO.ui.Widget.html">Widget</a></li><li><a href="OO.ui.WikimediaUITheme.html">WikimediaUITheme</a></li><li><a href="OO.ui.Window.html">Window</a></li><li><a href="OO.ui.WindowInstance.html">WindowInstance</a></li><li><a href="OO.ui.WindowManager.html">WindowManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:changeAchangeeventisemittedwhentheon/offstateofthetogglechanges.">change
+
+A change event is emitted when the on/off state of the toggle changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhentheselectedstateoftheoptionchanges.">change
+
+A change event is emitted when the selected state of the option changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofitemschanges,oranitemisselectedordeselected.">change
+
+A change event is emitted when the set of items changes, or an item is selected or deselected.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthesetofselecteditemschanges.">change
+
+A change event is emitted when the set of selected items changes.</a></li><li><a href="global.html#event:changeAchangeeventisemittedwhenthevalueoftheinputchanges.">change
+
+A change event is emitted when the value of the input changes.</a></li><li><a href="global.html#event:dragendAdragendeventisemittedwhentheuserdragsanitemandreleasesthemouse,thusterminatingthedragoperation.">dragend
+A dragend event is emitted when the user drags an item and releases the mouse,
+thus terminating the drag operation.</a></li><li><a href="global.html#event:dragstartAdragstarteventisemittedwhentheuserclicksandbeginsdragginganitem.">dragstart
+
+A dragstart event is emitted when the user clicks and begins dragging an item.</a></li><li><a href="global.html#event:dropAdropeventisemittedwhentheuserdragsanitemandthenreleasesthemousebuttonoveravalidtarget.">drop
+A drop event is emitted when the user drags an item and then releases the mouse button
+over a valid target.</a></li><li><a href="global.html#event:active">active</a></li><li><a href="global.html#event:add">add</a></li><li><a href="global.html#event:change">change</a></li><li><a href="global.html#event:click">click</a></li><li><a href="global.html#event:closing">closing</a></li><li><a href="global.html#event:disable">disable</a></li><li><a href="global.html#event:drag">drag</a></li><li><a href="global.html#event:draggable">draggable</a></li><li><a href="global.html#event:enter">enter</a></li><li><a href="global.html#event:labelChange">labelChange</a></li><li><a href="global.html#event:move">move</a></li><li><a href="global.html#event:navigate">navigate</a></li><li><a href="global.html#event:opening">opening</a></li><li><a href="global.html#event:remove">remove</a></li><li><a href="global.html#event:reorder">reorder</a></li><li><a href="global.html#event:resize">resize</a></li><li><a href="global.html#event:set">set</a></li><li><a href="global.html#event:submit">submit</a></li><li><a href="global.html#event:toggle">toggle</a></li><li><a href="global.html#event:update">update</a></li><li><a href="global.html#event:valid">valid</a></li><li><a href="global.html#event:visibleItemChange">visibleItemChange</a></li><li><a href="global.html#event:flagAflageventisemittedwhenthe#clearFlagsor#setFlagsmethodsareused.The%2560changes%2560parametercontainsthenameofeachmodifiedflagandindicateswhetheritwasaddedorremoved.">flag
+A flag event is emitted when the #clearFlags or #setFlags methods are used. The `changes`
+parameter contains the name of each modified flag and indicates whether it was
+added or removed.</a></li><li><a href="OO.ui.ButtonElement.html#event:click">click</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.ButtonSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.MenuSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.OutlineSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.RadioSelectWidget.html#event:select">select</a></li><li><a href="OO.ui.SelectWidget.html#event:add">add</a></li><li><a href="OO.ui.SelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.SelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.SelectWidget.html#event:press">press</a></li><li><a href="OO.ui.SelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.SelectWidget.html#event:select">select</a></li><li><a href="OO.ui.TabSelectWidget.html#event:add">add</a></li><li><a href="OO.ui.TabSelectWidget.html#event:choose">choose</a></li><li><a href="OO.ui.TabSelectWidget.html#event:highlight">highlight</a></li><li><a href="OO.ui.TabSelectWidget.html#event:press">press</a></li><li><a href="OO.ui.TabSelectWidget.html#event:remove">remove</a></li><li><a href="OO.ui.TabSelectWidget.html#event:select">select</a></li><li><a href="global.html#event:readyThemenuisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The menu is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:readyThepopupisready:itisvisibleandhasbeenpositionedandclipped.">ready
+
+The popup is ready: it is visible and has been positioned and clipped.</a></li><li><a href="global.html#event:removeAremoveactionwasperformedontheitem">remove
+
+A remove action was performed on the item</a></li><li><a href="global.html#event:resizeAresizeeventisemittedwhenthewidget'sdimensionschangetoaccomodatenewlyaddeditemsorcurrentuserinput.">resize
+
+A resize event is emitted when the widget's dimensions change to accomodate newly added items or
+current user input.</a></li><li><a href="global.html#event:selectAselecteventisemittedwhenanitemisselectedordeselected.">select
+
+A select event is emitted when an item is selected or deselected.</a></li><li><a href="global.html#event:selectThetagwidgetwasselected.Thiscanoccurwhenthewidgetiseitherclickedorenterwaspressedonit.">select
+
+The tag widget was selected. This can occur when the widget
+is either clicked or enter was pressed on it.</a></li><li><a href="global.html#event:updateStateAn'updateState'eventmustbeemittedontheToolbar(bycalling%2560toolbar.emit('updateState')%2560)everytimethestateoftheapplicationusingthetoolbarchanges,andanupdatetothestateoftoolsisrequired.">updateState
+
+An 'updateState' event must be emitted on the Toolbar (by calling `toolbar.emit( 'updateState' )`)
+every time the state of the application using the toolbar changes, and an update to the state of
+tools is required.</a></li></ul><h3>Mixins</h3><ul><li><a href="OO.ui.mixin.AccessKeyedElement.html">AccessKeyedElement</a></li><li><a href="OO.ui.mixin.ButtonElement.html">ButtonElement</a></li><li><a href="OO.ui.mixin.ClippableElement.html">ClippableElement</a></li><li><a href="OO.ui.mixin.DraggableElement.html">DraggableElement</a></li><li><a href="OO.ui.mixin.DraggableGroupElement.html">DraggableGroupElement</a></li><li><a href="OO.ui.mixin.FlaggedElement.html">FlaggedElement</a></li><li><a href="OO.ui.mixin.FloatableElement.html">FloatableElement</a></li><li><a href="OO.ui.mixin.GroupElement.html">GroupElement</a></li><li><a href="OO.ui.mixin.GroupWidget.html">GroupWidget</a></li><li><a href="OO.ui.mixin.IconElement.html">IconElement</a></li><li><a href="OO.ui.mixin.IndicatorElement.html">IndicatorElement</a></li><li><a href="OO.ui.mixin.LabelElement.html">LabelElement</a></li><li><a href="OO.ui.mixin.LookupElement.html">LookupElement</a></li><li><a href="OO.ui.mixin.PendingElement.html">PendingElement</a></li><li><a href="OO.ui.mixin.PopupElement.html">PopupElement</a></li><li><a href="OO.ui.mixin.RequestManager.html">RequestManager</a></li><li><a href="OO.ui.mixin.TabIndexedElement.html">TabIndexedElement</a></li><li><a href="OO.ui.mixin.TitledElement.html">TitledElement</a></li></ul><h3>Global</h3><ul><li><a href="global.html#isActive">isActive</a></li><li><a href="global.html#setActive">setActive</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Thu Jan 11 2018 12:31:36 GMT+0530 (IST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
